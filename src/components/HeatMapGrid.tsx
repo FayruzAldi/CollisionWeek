@@ -6,18 +6,10 @@ import { PastelIllustration } from "@/components/PastelIllustrations";
 import { CircularProgressRing } from "@/components/CircularProgressRing";
 import {
   AlertOctagon,
-  AlertTriangle,
-  CheckCircle2,
-  Calendar,
-  Layers,
   ArrowRight,
   Search,
-  Filter,
-  SlidersHorizontal,
   LayoutGrid,
   List,
-  Sparkles,
-  ChevronDown,
 } from "lucide-react";
 
 interface WeeklyMetricItem {
@@ -204,19 +196,18 @@ export function HeatMapGrid({ metrics, onOpenSolverModal }: HeatMapGridProps) {
 
                   {/* Card Body */}
                   <div className="p-4 space-y-3">
-                    {/* Category / Type row */}
+                    {/* Status row — no eyebrow, just the status pill + week label */}
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wide flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                      <span className="text-[11px] font-medium text-slate-500">
                         {item.weekNumber === 8
                           ? "Midterm Week"
                           : item.weekNumber === 16
-                          ? "Final Exam Week"
-                          : `Academic Week ${item.weekNumber}`}
+                          ? "Final Exam"
+                          : `Week ${item.weekNumber}`}
                       </span>
 
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                           isCollision
                             ? "bg-rose-100 text-rose-700"
                             : isCaution
@@ -224,12 +215,12 @@ export function HeatMapGrid({ metrics, onOpenSolverModal }: HeatMapGridProps) {
                             : "bg-emerald-100 text-emerald-700"
                         }`}
                       >
-                        {isCollision ? "Collision Crunch" : isCaution ? "Moderate" : "Safe Load"}
+                        {isCollision ? "Collision" : isCaution ? "Caution" : "Safe"}
                       </span>
                     </div>
 
                     {/* Week Title */}
-                    <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-1 group-hover:text-[#5850EC] transition-colors">
+                    <h4 className="font-semibold text-slate-800 text-sm leading-snug line-clamp-1 group-hover:text-[#5850EC] transition-colors">
                       {item.weekNumber === 8
                         ? "Midterm Project & Assessment Crunch"
                         : item.weekNumber === 14
@@ -276,21 +267,21 @@ export function HeatMapGrid({ metrics, onOpenSolverModal }: HeatMapGridProps) {
                 </div>
 
                 {/* Card Footer Button */}
-                <div className="p-3 px-4 bg-[#FAFBFD] border-t border-[#F1F3F8] flex items-center justify-between">
+                <div className="pt-3 pb-4 px-4 border-t border-[#F1F3F8] flex items-center justify-between">
                   <span className="text-[11px] text-slate-400 font-medium">
                     {isCollision ? "High clustering" : "Balanced load"}
                   </span>
 
                   <Link
                     href={`/weeks/${item.weekNumber}`}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1 active:scale-[0.98] ${
                       isCollision
-                        ? "bg-[#5850EC] text-white hover:bg-[#4B41DE] shadow-xs"
+                        ? "bg-[#5850EC] text-white hover:bg-[#4B41DE]"
                         : "bg-white border border-[#E9ECF2] text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    <span>{isCollision ? "Solve Moves" : "View"}</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <span>{isCollision ? "Solve" : "View"}</span>
+                    <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
                   </Link>
                 </div>
               </div>
@@ -306,7 +297,13 @@ export function HeatMapGrid({ metrics, onOpenSolverModal }: HeatMapGridProps) {
               className="p-4 px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors"
             >
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-800 text-xs">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${
+                  item.collisionCount >= 3
+                    ? "bg-rose-100 text-rose-700"
+                    : item.collisionCount === 2
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-slate-100 text-slate-700"
+                }`}>
                   W{item.weekNumber}
                 </div>
                 <div>

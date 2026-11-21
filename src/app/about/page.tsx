@@ -68,7 +68,7 @@ export default function AboutPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
               About Collision Week &amp; Team
             </h1>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
@@ -84,7 +84,7 @@ export default function AboutPage() {
           href="https://github.com/FayruzAldi/CollisionWeek.git"
           target="_blank"
           rel="noreferrer"
-          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors active:scale-[0.98]"
         >
           <Github className="w-4 h-4" />
           <span>GitHub Repository</span>
@@ -95,14 +95,11 @@ export default function AboutPage() {
       {/* Empirical Research Evidence (PRD Section 2.2) */}
       <section className="trenning-card p-6 space-y-5">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
-            PRD Section 2.2 Empirical Research
-          </span>
-          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mt-1.5">
+          <h2 className="text-base font-bold text-slate-900 tracking-tight">
             Survey of 53 University Students Across 48 Study Programs
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Empirical validation conducted in November 2026 proving the critical necessity of load balancing and sub-topic peer assistance.
+          <p className="text-xs text-slate-500 mt-1">
+            Empirical validation conducted November 2026 — proving the critical necessity of load balancing and sub-topic peer assistance.
           </p>
         </div>
 
@@ -151,16 +148,16 @@ export default function AboutPage() {
       </section>
 
       {/* Competition Compliance & Deterministic Guarantee */}
-      <section className="trenning-card p-6 space-y-3 bg-slate-900 text-white border-slate-800">
+      <section className="trenning-card p-6 space-y-3 border-[#5850EC]/20 bg-[#F4F5FF]">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <h3 className="font-extrabold text-white text-base">
+          <ShieldCheck className="w-5 h-5 text-[#5850EC]" strokeWidth={1.5} />
+          <h3 className="font-bold text-slate-900 text-base">
             Competition Transparency &amp; Determinism Declaration
           </h3>
         </div>
 
-        <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
-          In strict compliance with STACK 2026 rules, <strong>Collision Week&apos;s load calculations,
+        <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
+          In strict compliance with STACK 2026 rules, <strong className="text-slate-900">Collision Week&apos;s load calculations,
           collision detection, and minimal date move recommendations run on 100% deterministic mathematical heuristics</strong> (no AI/LLM).
           All demonstration data is explicitly synthetic, and unfinished features are cordoned off as official Final Day Milestones.
         </p>
@@ -168,10 +165,10 @@ export default function AboutPage() {
         <div className="pt-2 flex items-center gap-3">
           <Link
             href="/"
-            className="px-4 py-2 rounded-xl bg-[#5850EC] hover:bg-[#4B41DE] text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 rounded-xl bg-[#5850EC] hover:bg-[#4B41DE] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-[0.98]"
           >
             <span>Explore 16-Week Heat Map</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Link>
         </div>
       </section>

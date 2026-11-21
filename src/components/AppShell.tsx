@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { openContentModal, openSolverModal } = useModals();
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FB]">
+    <div className="flex min-h-[100dvh] bg-[#F8F9FB]">
       {/* Left Sidebar */}
       <Sidebar
         onOpenContentModal={openContentModal}

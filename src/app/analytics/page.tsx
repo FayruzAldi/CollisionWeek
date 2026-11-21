@@ -104,22 +104,18 @@ export default function LecturerAnalyticsPage() {
         </div>
       </div>
 
-      {/* KPI Cards (Image 1 style) */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="trenning-card p-4.5 space-y-1">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Total Sub-topic Questions
-          </p>
+        <div className="trenning-card p-5 space-y-1">
+          <p className="text-xs text-slate-500 font-medium">Total Questions</p>
           <p className="text-2xl font-black text-slate-900">
             {data?.summary.totalRequests ?? 0}
           </p>
-          <span className="text-[11px] text-slate-500">Tracked across 6 courses</span>
+          <span className="text-[11px] text-slate-400">Tracked across 6 courses</span>
         </div>
 
-        <div className="trenning-card p-4.5 space-y-1">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Resolution Rate
-          </p>
+        <div className="trenning-card p-5 space-y-1">
+          <p className="text-xs text-slate-500 font-medium">Resolution Rate</p>
           <p className="text-2xl font-black text-emerald-600">
             {data?.summary.overallResolutionRate ?? 0}%
           </p>
@@ -128,22 +124,18 @@ export default function LecturerAnalyticsPage() {
           </span>
         </div>
 
-        <div className="trenning-card p-4.5 space-y-1">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Avg Time to First Response
-          </p>
+        <div className="trenning-card p-5 space-y-1">
+          <p className="text-xs text-slate-500 font-medium">Avg First Response</p>
           <p className="text-2xl font-black text-[#5850EC]">
-            {data?.summary.overallAvgFirstResponseHours ?? 0} hours
+            {data?.summary.overallAvgFirstResponseHours ?? 0}h
           </p>
-          <span className="text-[11px] text-slate-500">Target SLA: &lt; 24h</span>
+          <span className="text-[11px] text-slate-400">Target SLA: &lt; 24h</span>
         </div>
 
-        <div className="trenning-card p-4.5 space-y-1">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            High Friction Topics
-          </p>
+        <div className="trenning-card p-5 space-y-1">
+          <p className="text-xs text-slate-500 font-medium">High Friction Topics</p>
           <p className="text-2xl font-black text-rose-600">
-            {data?.summary.criticalSubtopicsCount ?? 0} Topics
+            {data?.summary.criticalSubtopicsCount ?? 0}
           </p>
           <span className="text-[11px] text-rose-600 font-semibold">
             Pedagogical review recommended
@@ -165,9 +157,19 @@ export default function LecturerAnalyticsPage() {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-slate-400">
-            <div className="w-8 h-8 border-2 border-[#5850EC] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p className="text-xs font-bold">Aggregating Sub-topic Analytics...</p>
+          <div className="space-y-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-white animate-pulse">
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-slate-100 rounded-full w-1/4" />
+                    <div className="h-2 bg-slate-100 rounded-full w-full" />
+                    <div className="h-8 bg-slate-100 rounded-xl w-full" />
+                  </div>
+                  <div className="w-24 h-16 bg-slate-100 rounded-2xl flex-shrink-0" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="space-y-3.5">
@@ -228,7 +230,7 @@ export default function LecturerAnalyticsPage() {
                     {/* Stats ring / boxes */}
                     <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-2xs self-start lg:self-auto">
                       <div className="text-center px-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Inquiries</span>
+                        <span className="text-[10px] text-slate-400 font-medium block">Inquiries</span>
                         <span className="text-lg font-black text-slate-900">{stat.totalRequests}</span>
                       </div>
                       <div className="w-px h-8 bg-slate-100"></div>
