@@ -2,16 +2,10 @@
 
 import React, { useState } from "react";
 import { useRole } from "@/context/RoleContext";
-import {
-  X,
-  HelpCircle,
-  Tag,
-  Send,
-  Users,
-  CheckCircle2,
-  Sparkles,
-  BookOpen,
-} from "lucide-react";
+import { Send } from "lucide-react";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { Field } from "./ui/Field";
 
 interface AssignmentOption {
   id: string;
@@ -52,8 +46,6 @@ export function HelpRequestModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const activeAssignment = assignments.find((a) => a.id === selectedAssignmentId);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,15 +54,15 @@ export function HelpRequestModal({
 
     const subtopic = customSubtopic.trim() || selectedSubtopic;
     if (!selectedAssignmentId) {
-      setError("Please select an assignment.");
+      setError("Pilih tugas terlebih dahulu.");
       return;
     }
     if (!subtopic) {
-      setError("Please select or specify a sub-topic tag.");
+      setError("Pilih atau tulis sub-topik.");
       return;
     }
     if (!questionDetail.trim() || questionDetail.trim().length < 15) {
-      setError("Please describe your academic blocker in at least 15 characters.");
+      setError("Jelaskan kendala minimal 15 karakter.");
       return;
     }
 
@@ -92,156 +84,112 @@ export function HelpRequestModal({
         onSuccess();
         onClose();
       } else {
-        setError(data.error || "Failed to create help request.");
+        setError(data.error || "Gagal mengajukan bantuan.");
       }
     } catch {
-      setError("Network error creating help request.");
+      setError("Koneksi gagal saat mengajukan bantuan.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="p-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#EEF0FD] text-[#5850EC] flex items-center justify-center">
-              <HelpCircle className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-base">
-                Request Sub-topic Peer Help
-              </h3>
-              <p className="text-xs text-slate-500">
-                Post your specific blocker for class-wide peer unblocking
-              </p>
-            </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Minta bantuan sub-topik"
+      description="Tuliskan kendala spesifikmu agar dibaca seluruh kelas. Teman sekelas dapat membantu melalui tulisan, rekaman, atau sesi 20 menit."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+        {error && (
+          <div className="p-3 rounded-xl bg-semantic-danger-soft border border-semantic-danger-soft text-semantic-danger-fg text-xs font-medium">
+            {error}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+        )}
+
+        {/* Pilih Tugas */}
+        <Field id="assignment-select" label="Pilih tugas" required>
+          <select
+            id="assignment-select"
+            value={selectedAssignmentId}
+            onChange={(e) => {
+              setSelectedAssignmentId(e.target.value);
+              setSelectedSubtopic("");
+            }}
+            className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line px-3 py-2 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            {assignments.map((a) => (
+              <option key={a.id} value={a.id}>
+                [{a.courseCode}] {a.title} (Pekan {a.weekNumber})
+              </option>
+            ))}
+          </select>
+        </Field>
 
-        {/* Cold-Start Whole-Class Visibility Notice */}
-        <div className="px-6 py-2.5 bg-indigo-50/60 border-b border-indigo-100 flex items-center gap-2 text-xs text-indigo-950 font-medium">
-          <Users className="w-4 h-4 text-[#5850EC] flex-shrink-0" />
-          <span>
-            <strong>Whole-Class Visibility:</strong> Automatically published to all enrolled peers in this course.
-          </span>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-              {error}
-            </div>
-          )}
-
-          {/* Assignment Selection */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Select Assignment:
-            </label>
-            <select
-              value={selectedAssignmentId}
-              onChange={(e) => {
-                setSelectedAssignmentId(e.target.value);
-                setSelectedSubtopic("");
-              }}
-              className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#5850EC]/30 focus:outline-hidden"
-            >
-              {assignments.map((a) => (
-                <option key={a.id} value={a.id}>
-                  [{a.courseCode}] Week {a.weekNumber} — {a.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subtopic Tags */}
-          {activeAssignment && (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <Tag className="w-3.5 h-3.5 text-[#5850EC]" />
-                  Select Sub-topic Tag:
-                </span>
-                <span className="text-[11px] text-slate-400">Click a tag below</span>
-              </label>
-
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {activeAssignment.subtopics?.map((tag: string) => {
-                  const isSelected = selectedSubtopic === tag && !customSubtopic;
-                  return (
+        {/* Pilih Sub-topik */}
+        {activeAssignment && (
+          <Field id="subtopic-custom" label="Pilih sub-topik" required helperText="Pilih salah satu tag di atas atau tuliskan sub-topik baru.">
+            <div className="space-y-2">
+              {activeAssignment.subtopics?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {activeAssignment.subtopics.map((tag) => (
                     <button
-                      type="button"
                       key={tag}
+                      type="button"
                       onClick={() => {
                         setSelectedSubtopic(tag);
                         setCustomSubtopic("");
                       }}
-                      className={`text-xs px-2.5 py-1 rounded-xl border font-semibold transition-all ${
-                        isSelected
-                          ? "bg-[#5850EC] text-white border-[#5850EC] shadow-xs"
-                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        selectedSubtopic === tag && !customSubtopic
+                          ? "bg-cw-accent text-white"
+                          : "bg-cw-sunken text-cw-ink hover:bg-cw-accent-soft"
                       }`}
                     >
                       #{tag}
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
 
               <input
+                id="subtopic-custom"
                 type="text"
-                placeholder="Or type custom sub-topic tag..."
                 value={customSubtopic}
-                onChange={(e) => setCustomSubtopic(e.target.value)}
-                className="w-full text-xs rounded-xl border border-slate-200 p-2 bg-slate-50 text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#5850EC]/30 focus:outline-hidden"
+                onChange={(e) => {
+                  setCustomSubtopic(e.target.value);
+                  if (e.target.value) setSelectedSubtopic("");
+                }}
+                placeholder="Atau tulis sub-topik sendiri"
+                className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line px-3 py-2 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
               />
             </div>
-          )}
+          </Field>
+        )}
 
-          {/* Question Description */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Describe your question or blocker:
-            </label>
-            <textarea
-              rows={4}
-              placeholder="e.g. In the query optimization part, how do we prove dependency preservation for BCNF decomposition without breaking 3NF? Here is what I tried..."
-              value={questionDetail}
-              onChange={(e) => setQuestionDetail(e.target.value)}
-              className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#5850EC]/30 focus:outline-hidden leading-relaxed"
-            ></textarea>
-          </div>
+        {/* Rincian Pertanyaan */}
+        <Field id="question-detail" label="Jelaskan kendalamu" required helperText="Tuliskan bagian mana yang belum dipahami atau pesan kesalahan yang muncul.">
+          <textarea
+            id="question-detail"
+            rows={4}
+            value={questionDetail}
+            onChange={(e) => setQuestionDetail(e.target.value)}
+            placeholder="Contoh: Saya kesulitan memahami langkah normalisasi pada tabel relasional BCNF..."
+            className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line p-3 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40 leading-relaxed"
+          />
+        </Field>
 
-          {/* Action buttons */}
-          <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2 text-xs font-bold text-white bg-[#5850EC] hover:bg-[#4B41DE] rounded-xl shadow-xs flex items-center gap-1.5 transition-all disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5" />
-              {isSubmitting ? "Publishing..." : "Post Help Request"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Tombol Footer */}
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-cw-line">
+          <Button variant="ghost" size="sm" type="button" onClick={onClose}>
+            Batal
+          </Button>
+          <Button variant="primary" size="sm" type="submit" disabled={isSubmitting}>
+            <Send className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <span>{isSubmitting ? "Mengirim..." : "Kirim permintaan"}</span>
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

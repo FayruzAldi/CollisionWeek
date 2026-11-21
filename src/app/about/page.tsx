@@ -4,79 +4,77 @@ import React from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
-  Users,
-  Award,
-  BookOpen,
-  PieChart,
   Github,
-  CheckCircle,
-  Sparkles,
   ExternalLink,
   ArrowRight,
+  FileText,
+  Layers,
 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 export default function AboutPage() {
   const teamMembers = [
     {
       name: "Aldiansyah Fayruz",
-      role: "Team Leader & Core Deterministic Logic",
-      focus: "Deterministic Heuristic Engine, Minimal Date Move Solver, Database Architecture",
+      role: "Ketua Tim & Logika Deterministik",
+      focus: "Mesin Heuristik Deterministik, Solver Pergeseran Tanggal, Arsitektur Basis Data",
     },
     {
       name: "Khadijah Passa Alkhansa",
-      role: "Frontend Engineer & UI/UX Designer",
-      focus: "16-Week Semester Heat Map, Sub-topic Peer Help Interfaces, High-Contrast Palette",
+      role: "Perekayasa Antarmuka & Desainer UI/UX",
+      focus: "Peta Beban 16 Pekan, Antarmuka Bantuan Sebaya, Sistem Token dan Aksesibilitas",
     },
     {
       name: "Khalisha Kaylanasywa",
-      role: "Research, Empirical Data & User Testing",
-      focus: "53-Student Survey, 3 Lecturer Interviews, Early User Validation Protocol",
+      role: "Riset Empiris & Uji Pengguna",
+      focus: "Survei 53 Mahasiswa, Wawancara 3 Dosen, Protokol Validasi Pengguna Awal",
     },
     {
       name: "Shiti Azzahra Eka Rinaldi",
-      role: "Product Manager, Proposal & Video Director",
-      focus: "PRD Compliance, KPI Tracking, Final Day Scope Planning, Demonstration Video",
+      role: "Manajer Produk & Dokumentasi",
+      focus: "Kepatuhan PRD, Pelacakan Indikator Kinerja, Perencanaan Cakupan, Video Demo",
     },
   ];
 
   const empiricalSurveyStats = [
     {
       metric: "74%",
-      label: "Multi-Course Clustering",
-      desc: "Had ≥3 major assignments due in a single week across different courses.",
+      label: "Tugas menumpuk lintas matkul",
+      desc: "Menghadapi 3 atau lebih tugas besar jatuh tempo bersamaan di pekan yang sama.",
     },
     {
       metric: "15%",
-      label: "Extreme Collision",
-      desc: "Faced 5 or more major assignments due simultaneously in one week.",
+      label: "Tabrakan ekstrem",
+      desc: "Menghadapi 5 tugas besar atau lebih jatuh tempo pada pekan yang sama.",
     },
     {
       metric: "60%",
-      label: "Severe Sleep Deprivation",
-      desc: "Slept 5 hours or less per night during assignment collision crunch weeks.",
+      label: "Kurang tidur berat",
+      desc: "Hanya tidur 5 jam atau kurang per malam pada pekan padat tugas.",
     },
     {
       metric: "62%",
-      label: "Knowledge Asymmetry",
-      desc: "Could not identify who in class had mastered the specific sub-topic they were stuck on.",
+      label: "Tidak tahu siapa yang menguasai",
+      desc: "Tidak dapat mengidentifikasi teman sekelas yang sudah memahami sub-topik kendala mereka.",
     },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-7">
+      {/* Header Halaman */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-cw-line">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              About Collision Week &amp; Team
-            </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-              STACK 2026 Entry
-            </span>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-semibold tracking-tight text-cw-ink">
+              Tentang
+            </h2>
+            <Badge variant="neutral" shape="pill">
+              Peserta STACK 2026
+            </Badge>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Case 1: Smarter Campus and Learning • Team &quot;daftar krna gratis&quot;
+          <p className="text-xs text-cw-muted mt-0.5">
+            Case 1: Smarter Campus and Learning · Tim &quot;daftar krna gratis&quot;
           </p>
         </div>
 
@@ -84,91 +82,148 @@ export default function AboutPage() {
           href="https://github.com/FayruzAldi/CollisionWeek.git"
           target="_blank"
           rel="noreferrer"
-          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors active:scale-[0.98]"
         >
-          <Github className="w-4 h-4" />
-          <span>GitHub Repository</span>
-          <ExternalLink className="w-3 h-3 text-slate-400" />
+          <Button variant="outline" size="sm" type="button">
+            <Github className="w-4 h-4" strokeWidth={1.75} />
+            <span>Repositori GitHub</span>
+            <ExternalLink className="w-3.5 h-3.5 text-cw-faint ml-0.5" strokeWidth={1.75} />
+          </Button>
         </a>
       </div>
 
-      {/* Empirical Research Evidence (PRD Section 2.2) */}
-      <section className="trenning-card p-6 space-y-5">
+      {/* Validasi Empiris */}
+      <section className="cw-card p-6 space-y-5">
         <div>
-          <h2 className="text-base font-bold text-slate-900 tracking-tight">
-            Survey of 53 University Students Across 48 Study Programs
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Empirical validation conducted November 2026 — proving the critical necessity of load balancing and sub-topic peer assistance.
+          <h3 className="text-base font-semibold text-cw-ink">
+            Survei 53 mahasiswa dari 48 program studi
+          </h3>
+          <p className="text-xs text-cw-muted mt-0.5">
+            Validasi lapangan, November 2026, tentang kebutuhan penyeimbangan beban dan bantuan sebaya.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {empiricalSurveyStats.map((stat, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-[#F8F9FB] border border-[#E9ECF2]">
-              <span className="text-3xl font-black text-slate-900 block leading-tight">{stat.metric}</span>
-              <span className="font-bold text-slate-800 text-xs block mt-1">{stat.label}</span>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{stat.desc}</p>
+            <div key={i} className="p-4 rounded-xl bg-cw-subtle border border-cw-line space-y-1">
+              <span className="text-2xl font-semibold text-cw-ink block tabular-nums">
+                {stat.metric}
+              </span>
+              <span className="text-xs font-semibold text-cw-ink block">
+                {stat.label}
+              </span>
+              <p className="text-xs text-cw-muted leading-relaxed">
+                {stat.desc}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-950 leading-relaxed">
-          <strong>Lecturer Validation:</strong> Semi-structured interviews with 3 university lecturers confirmed
-          that assignment deadlines are currently set with zero cross-course visibility. Lecturers strongly favored
-          a system that proposes <em>minimal date shifts</em> with one-click approval authority.
+        <div className="p-3.5 rounded-xl bg-cw-subtle border border-cw-line text-xs text-cw-muted leading-relaxed">
+          <strong className="text-cw-ink font-semibold">Validasi dosen: </strong>
+          Wawancara dengan 3 dosen universitas menegaskan bahwa saat ini tenggat tugas ditentukan tanpa visibilitas lintas mata kuliah. Dosen sangat mendukung sistem yang mengusulkan pergeseran tanggal minimal dengan hak persetujuan satu klik.
         </div>
       </section>
 
-      {/* Team Roster */}
-      <section className="trenning-card p-6 space-y-4">
+      {/* Rencana Rilis Fitur Berikutnya */}
+      <section className="cw-card p-6 space-y-4">
         <div>
-          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
-            Team &quot;daftar krna gratis&quot;
-          </h2>
-          <p className="text-xs text-slate-500">
-            Contributors behind Collision Week for GDGoC ITB STACK 2026
+          <h3 className="text-base font-semibold text-cw-ink">
+            Peta jalan pengembangan
+          </h3>
+          <p className="text-xs text-cw-muted mt-0.5">
+            Integrasi lanjutan yang direncanakan untuk implementasi penuh di lingkungan kampus
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl border border-cw-line bg-cw-subtle flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-cw-accent" strokeWidth={1.75} />
+                <h4 className="text-[13px] font-semibold text-cw-ink">
+                  Ekstraksi Silabus PDF &amp; Tenggat Otomatis
+                </h4>
+              </div>
+              <p className="text-xs text-cw-muted leading-relaxed">
+                Mengekstrak tanggal evaluasi dan kode mata kuliah secara otomatis dari dokumen RPS silabus PDF.
+              </p>
+            </div>
+            <Badge variant="neutral" shape="pill">
+              Segera
+            </Badge>
+          </div>
+
+          <div className="p-4 rounded-xl border border-cw-line bg-cw-subtle flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cw-accent" strokeWidth={1.75} />
+                <h4 className="text-[13px] font-semibold text-cw-ink">
+                  Sinkronisasi Langsung Moodle &amp; Classroom
+                </h4>
+              </div>
+              <p className="text-xs text-cw-muted leading-relaxed">
+                Sinkronisasi berkala melalui API LMS kampus dengan akun SSO mahasiswa dan dosen.
+              </p>
+            </div>
+            <Badge variant="neutral" shape="pill">
+              Segera
+            </Badge>
+          </div>
+        </div>
+      </section>
+
+      {/* Tim Pengembang */}
+      <section className="cw-card p-6 space-y-4">
+        <div>
+          <h3 className="text-base font-semibold text-cw-ink">
+            Tim &quot;daftar krna gratis&quot;
+          </h3>
+          <p className="text-xs text-cw-muted mt-0.5">
+            Kontributor di balik pengembangan Collision Week
+          </p>
+        </div>
+
+        <div className="divide-y divide-cw-line">
           {teamMembers.map((member, i) => (
-            <div key={i} className="p-4 rounded-2xl border border-slate-100 bg-[#FAFBFD] flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+            <div key={i} className="py-3 first:pt-1 last:pb-1 flex items-start gap-3.5">
+              <div className="w-8 h-8 rounded-xl bg-cw-accent-soft text-cw-accent flex items-center justify-center font-bold text-xs flex-shrink-0">
                 {member.name.charAt(0)}
               </div>
-              <div>
-                <h4 className="font-extrabold text-slate-900 text-sm">{member.name}</h4>
-                <p className="text-xs font-semibold text-[#5850EC]">{member.role}</p>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{member.focus}</p>
+              <div className="min-w-0">
+                <h4 className="text-[13px] font-semibold text-cw-ink">
+                  {member.name}
+                </h4>
+                <p className="text-xs font-medium text-cw-accent">
+                  {member.role}
+                </p>
+                <p className="text-xs text-cw-muted mt-0.5 leading-relaxed">
+                  {member.focus}
+                </p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Competition Compliance & Deterministic Guarantee */}
-      <section className="trenning-card p-6 space-y-3 border-[#5850EC]/20 bg-[#F4F5FF]">
+      {/* Deklarasi Determinisme */}
+      <section className="cw-card p-6 space-y-3 bg-cw-accent-soft/30 border-cw-accent-line">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-[#5850EC]" strokeWidth={1.5} />
-          <h3 className="font-bold text-slate-900 text-base">
-            Competition Transparency &amp; Determinism Declaration
+          <ShieldCheck className="w-5 h-5 text-cw-accent" strokeWidth={1.75} />
+          <h3 className="text-base font-semibold text-cw-ink">
+            Deklarasi determinisme
           </h3>
         </div>
 
-        <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
-          In strict compliance with STACK 2026 rules, <strong className="text-slate-900">Collision Week&apos;s load calculations,
-          collision detection, and minimal date move recommendations run on 100% deterministic mathematical heuristics</strong> (no AI/LLM).
-          All demonstration data is explicitly synthetic, and unfinished features are cordoned off as official Final Day Milestones.
+        <p className="text-xs text-cw-muted leading-relaxed max-w-3xl">
+          Sesuai aturan kompetisi, seluruh perhitungan beban, deteksi tabrakan, dan usulan pergeseran tanggal Collision Week berjalan 100% pada heuristik matematis deterministik tanpa model bahasa (LLM). Data demonstrasi bersumber dari dataset sintetis satu semester penuh.
         </p>
 
-        <div className="pt-2 flex items-center gap-3">
-          <Link
-            href="/"
-            className="px-4 py-2 rounded-xl bg-[#5850EC] hover:bg-[#4B41DE] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-[0.98]"
-          >
-            <span>Explore 16-Week Heat Map</span>
-            <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+        <div className="pt-2">
+          <Link href="/">
+            <Button variant="primary" size="sm" type="button">
+              <span>Buka peta beban</span>
+              <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </Button>
           </Link>
         </div>
       </section>

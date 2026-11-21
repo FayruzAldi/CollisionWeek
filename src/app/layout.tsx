@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { RoleProvider } from "@/context/RoleContext";
 import { ModalProvider } from "@/context/ModalContext";
+import { ToastProvider } from "@/components/ui/Toast";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Collision Week | Academic Load Balancing & Sub-topic Peer Help",
+  title: "Collision Week | Penyeimbang Beban Tugas & Bantuan Sebaya",
   description:
-    "Deterministic academic load balancing and sub-topic peer assistance for university programs. Built for GDGoC ITB STACK 2026.",
+    "Penyeimbang beban tugas akademik dan bantuan sebaya berbasis sub-topik untuk program studi.",
 };
 
 export default function RootLayout({
@@ -16,11 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased bg-[#F8F9FB] text-slate-900">
+    <html lang="id">
+      <body className="antialiased bg-cw-bg text-cw-ink font-sans">
         <RoleProvider>
           <ModalProvider>
-            <AppShell>{children}</AppShell>
+            <ToastProvider>
+              <AppShell>{children}</AppShell>
+            </ToastProvider>
           </ModalProvider>
         </RoleProvider>
       </body>

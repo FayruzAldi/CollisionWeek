@@ -9,41 +9,58 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        trenning: {
-          50: "#EEF0FD",
-          100: "#E0E3FC",
-          200: "#C6CBF9",
-          300: "#9FA7F5",
-          400: "#757DEE",
-          500: "#5850EC", // Primary Purple / Indigo from inspiration images
-          600: "#4B41DE",
-          700: "#3E34C7",
-          800: "#332B9F",
-          900: "#2B257E",
+        cw: {
+          bg: "#F7F8FA",
+          surface: "#FFFFFF",
+          subtle: "#FAFBFC",
+          sunken: "#F2F4F7",
+          line: "#ECEEF3",
+          "line-strong": "#DFE3EA",
+          ink: "#12141A",
+          muted: "#6B7280",
+          faint: "#9AA1AC",
+          accent: "#5850EC",
+          "accent-hover": "#4B41DE",
+          "accent-soft": "#EEF0FD",
+          "accent-line": "#DDE0FB",
         },
-        surface: {
-          DEFAULT: "#FFFFFF",
-          subtle: "#F8F9FB",
-          muted: "#F3F4F6",
-          border: "#E9ECF2",
+        semantic: {
+          danger: {
+            DEFAULT: "#C0243B",
+            fg: "#C0243B",
+            soft: "#FDECEF",
+            ring: "#E5484D",
+          },
+          warning: {
+            DEFAULT: "#A05A00",
+            fg: "#A05A00",
+            soft: "#FDF3E3",
+            ring: "#E9A23B",
+          },
+          success: {
+            DEFAULT: "#17794A",
+            fg: "#17794A",
+            soft: "#E9F7EF",
+            ring: "#22A06B",
+          },
         },
-        collision: {
-          safe: "#10b981", // Emerald
-          caution: "#f59e0b", // Amber
-          danger: "#ef4444", // Crimson
-        },
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Plus Jakarta Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
       },
       borderRadius: {
-        "2xl": "1rem",
-        "3xl": "1.5rem",
-        "4xl": "2rem",
+        xl: "0.75rem", // 12px
+        "2xl": "1rem", // 16px
+        "3xl": "1.5rem", // 24px
       },
       boxShadow: {
-        card: "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)",
-        "card-hover": "0 8px 24px -4px rgba(88, 80, 236, 0.08), 0 4px 12px -2px rgba(0,0,0,0.04)",
+        card: "0 1px 2px rgba(18,20,26,0.04)",
+        "card-hover": "0 6px 20px -6px rgba(18,20,26,0.10)",
+        modal: "0 24px 60px -20px rgba(18,20,26,0.28)",
       },
     },
   },
   plugins: [],
 };
+
 export default config;

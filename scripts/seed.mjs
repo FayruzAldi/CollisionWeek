@@ -21,7 +21,7 @@ async function main() {
   const program = await prisma.program.create({
     data: {
       code: "IF-ITB",
-      name: "Informatics Engineering (Teknik Informatika)",
+      name: "Teknik Informatika",
       semesterStartDate,
       totalWeeks: 16,
     },
@@ -159,7 +159,7 @@ async function main() {
       programId: program.id,
       lecturerId: lecturerHendra.id,
       courseCode: "IF2110",
-      courseName: "Database Systems",
+      courseName: "Sistem Basis Data",
       semesterLevel: 5,
       color: "#2563eb", // Royal blue
     },
@@ -170,7 +170,7 @@ async function main() {
       programId: program.id,
       lecturerId: lecturerRina.id,
       courseCode: "IF2120",
-      courseName: "Software Engineering",
+      courseName: "Rekayasa Perangkat Lunak",
       semesterLevel: 5,
       color: "#059669", // Emerald green
     },
@@ -181,7 +181,7 @@ async function main() {
       programId: program.id,
       lecturerId: lecturerBudi.id,
       courseCode: "IF2130",
-      courseName: "Computer Networks",
+      courseName: "Jaringan Komputer",
       semesterLevel: 5,
       color: "#7c3aed", // Purple
     },
@@ -192,7 +192,7 @@ async function main() {
       programId: program.id,
       lecturerId: lecturerSri.id,
       courseCode: "IF2140",
-      courseName: "Design & Analysis of Algorithms",
+      courseName: "Desain & Analisis Algoritma",
       semesterLevel: 5,
       color: "#d97706", // Amber
     },
@@ -203,7 +203,7 @@ async function main() {
       programId: program.id,
       lecturerId: lecturerFauzi.id,
       courseCode: "IF2150",
-      courseName: "Operating Systems",
+      courseName: "Sistem Operasi",
       semesterLevel: 5,
       color: "#db2777", // Pink/Rose
     },
@@ -214,7 +214,7 @@ async function main() {
       programId: program.id,
       lecturerId: lecturerCitra.id,
       courseCode: "IF2160",
-      courseName: "Artificial Intelligence",
+      courseName: "Kecerdasan Buatan",
       semesterLevel: 5,
       color: "#0891b2", // Cyan
     },

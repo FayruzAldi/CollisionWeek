@@ -5,26 +5,15 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { DateMoveSolver } from "@/components/DateMoveSolver";
 import { HelpRequestModal } from "@/components/HelpRequestModal";
-import { PastelIllustration } from "@/components/PastelIllustrations";
-import { CircularProgressRing } from "@/components/CircularProgressRing";
 import { formatDate } from "@/lib/utils";
-import { useModals } from "@/context/ModalContext";
+import { Tag } from "@/components/ui/Tag";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import {
-  Calendar,
-  AlertOctagon,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Layers,
-  Tag,
-  HelpCircle,
-  Users,
-  Sparkles,
-  ExternalLink,
-  Clock,
-  BookOpen,
+  Plus,
 } from "lucide-react";
 
 interface WeekDetailData {
@@ -45,13 +34,13 @@ export default function WeekInspectorPage() {
   const params = useParams();
   const router = useRouter();
   const weekNumber = parseInt(params.weekNumber as string, 10) || 8;
+  const { showToast } = useToast();
 
   const [data, setData] = useState<WeekDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAssignmentIndex, setSelectedAssignmentIndex] = useState(0);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedAssignmentForHelp, setSelectedAssignmentForHelp] = useState<any | null>(null);
-  const { openSolverModal } = useModals();
 
   const fetchWeekData = async () => {
     try {
@@ -62,7 +51,7 @@ export default function WeekInspectorPage() {
         setData(json);
       }
     } catch (err) {
-      console.error("Failed to load week details:", err);
+      console.error("Gagal memuat rincian pekan:", err);
     } finally {
       setLoading(false);
     }
@@ -77,93 +66,109 @@ export default function WeekInspectorPage() {
   const activeAssignment = data?.assignments[selectedAssignmentIndex] || data?.assignments[0];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-      {/* Top Header & Week Carousel (Matching Image 4 header) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors shadow-2xs"
-          >
-            <ArrowLeft className="w-4 h-4" />
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Breadcrumb & Header */}
+      <div className="space-y-2 pb-2 border-b border-cw-line">
+        <div className="flex items-center gap-1.5 text-xs text-cw-faint">
+          <Link href="/" className="hover:text-cw-ink transition-colors">
+            Dasbor
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                Week {weekNumber} Academic Schedule
-              </h1>
-              {isCollision && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 flex items-center gap-1">
-                  <AlertOctagon className="w-3 h-3" />
-                  Collision Crunch (Cw = {data?.metric.collisionCount})
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-500">
-              {data?.assignments.length || 0} Assignments • Load Index: {data?.metric.loadIndex || 0} pts
-            </p>
-          </div>
+          <span>/</span>
+          <span className="text-cw-ink font-medium">Pekan {weekNumber}</span>
         </div>
 
-        {/* 16-Week Quick Carousel */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-2xs overflow-x-auto">
-          <button
-            onClick={() => router.push(`/weeks/${Math.max(1, weekNumber - 1)}`)}
-            disabled={weekNumber <= 1}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 disabled:opacity-30"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-semibold tracking-tight text-cw-ink">
+                Pekan {weekNumber}
+              </h2>
+              {isCollision ? (
+                <Badge variant="danger" shape="pill">
+                  Pekan bertabrakan (Cw = {data?.metric.collisionCount})
+                </Badge>
+              ) : isCaution ? (
+                <Badge variant="warning" shape="pill">
+                  Waspada (Cw = 2)
+                </Badge>
+              ) : (
+                <Badge variant="success" shape="pill">
+                  Beban seimbang
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-cw-muted mt-0.5">
+              {data?.assignments.length || 0} tugas · indeks beban {data?.metric.loadIndex || 0} poin
+            </p>
+          </div>
 
-          {Array.from({ length: 16 }, (_, i) => i + 1).map((w) => {
-            const isCurrent = w === weekNumber;
-            return (
-              <button
-                key={w}
-                onClick={() => router.push(`/weeks/${w}`)}
-                className={`w-7 h-7 rounded-xl text-xs font-bold transition-all ${
-                  isCurrent
-                    ? "bg-[#5850EC] text-white shadow-xs"
-                    : w === 8 || w === 14
-                    ? "bg-rose-100 text-rose-800 font-extrabold"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {w}
-              </button>
-            );
-          })}
+          {/* Pemilih Pekan 1-16 (kotak 28px, titik 4px untuk kritis) */}
+          <div className="flex items-center gap-1 bg-cw-surface p-1 rounded-2xl border border-cw-line overflow-x-auto self-start sm:self-auto">
+            <button
+              onClick={() => router.push(`/weeks/${Math.max(1, weekNumber - 1)}`)}
+              disabled={weekNumber <= 1}
+              aria-label="Pekan sebelumnya"
+              className="p-1 rounded-lg text-cw-faint hover:text-cw-ink disabled:opacity-30"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </button>
 
-          <button
-            onClick={() => router.push(`/weeks/${Math.min(16, weekNumber + 1)}`)}
-            disabled={weekNumber >= 16}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 disabled:opacity-30"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+            {Array.from({ length: 16 }, (_, i) => i + 1).map((w) => {
+              const isCurrent = w === weekNumber;
+              const isCriticalWeek = w === 8 || w === 14;
+
+              return (
+                <button
+                  key={w}
+                  onClick={() => router.push(`/weeks/${w}`)}
+                  className={`w-7 h-7 rounded-xl text-xs font-semibold relative transition-colors ${
+                    isCurrent
+                      ? "bg-cw-accent text-white"
+                      : "text-cw-muted hover:bg-cw-subtle hover:text-cw-ink"
+                  }`}
+                >
+                  {w}
+                  {isCriticalWeek && !isCurrent && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-semantic-danger-ring" />
+                  )}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => router.push(`/weeks/${Math.min(16, weekNumber + 1)}`)}
+              disabled={weekNumber >= 16}
+              aria-label="Pekan berikutnya"
+              className="p-1 rounded-lg text-cw-faint hover:text-cw-ink disabled:opacity-30"
+            >
+              <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Two-Panel Layout (Matching Image 4: Left item list + Right detail form/viewer) */}
+      {/* Tata letak dua kolom (lg:grid-cols-12) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Sub-panel: Assignment List (Image 4 Question List style) */}
+        {/* Kolom Kiri: Daftar Tugas (col-span-4) */}
         <div className="lg:col-span-4 space-y-3">
           <div className="flex items-center justify-between pb-1">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Assignments Due ({data?.assignments.length || 0})
+            <span className="text-xs font-semibold text-cw-muted">
+              Tugas jatuh tempo ({data?.assignments.length || 0})
             </span>
             <button
               onClick={() => {
                 setSelectedAssignmentForHelp(activeAssignment);
                 setHelpModalOpen(true);
               }}
-              className="text-xs font-bold text-[#5850EC] hover:underline flex items-center gap-1"
+              type="button"
+              className="text-xs font-semibold text-cw-accent hover:underline flex items-center gap-1"
             >
-              <span>+ Ask Help</span>
+              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+              <span>Minta bantuan</span>
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {data?.assignments.map((item, idx) => {
               const isSelected = selectedAssignmentIndex === idx;
               const isMajor = item.weightScore >= 3;
@@ -172,138 +177,120 @@ export default function WeekInspectorPage() {
                 <div
                   key={item.id}
                   onClick={() => setSelectedAssignmentIndex(idx)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border transition-colors cursor-pointer ${
                     isSelected
-                      ? "bg-white border-[#5850EC] ring-2 ring-[#5850EC]/15 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-slate-300"
+                      ? "bg-cw-accent-soft/40 border-cw-accent-line text-cw-ink"
+                      : "bg-cw-surface border-cw-line hover:bg-cw-subtle text-cw-ink"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded text-white"
-                      style={{ backgroundColor: item.courseColor || "#2563EB" }}
-                    >
-                      {item.courseCode}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        isMajor ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      Weight: {item.weightScore}/5
+                    <Tag>{item.courseCode}</Tag>
+                    <span className="text-[11px] text-cw-faint font-medium">
+                      {isMajor ? "Tugas besar · " : ""}Bobot {item.weightScore}/5
                     </span>
                   </div>
 
-                  <h4 className="font-bold text-slate-900 text-xs truncate">
+                  <h4 className="font-semibold text-xs text-cw-ink truncate">
                     {idx + 1}. {item.title}
                   </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Due: {formatDate(item.dueDate)} • {item.subtopics?.length || 0} sub-topics
+                  <p className="text-[11px] text-cw-faint mt-0.5">
+                    Tenggat: {formatDate(item.dueDate)} · {item.subtopics?.length || 0} sub-topik
                   </p>
                 </div>
               );
             })}
           </div>
 
-          {/* Quick Solve Card at bottom of left panel */}
+          {/* Catatan pekan kritis */}
           {isCollision && (
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-50 to-white border border-rose-200 space-y-2 mt-4">
-              <div className="flex items-center gap-1.5 font-bold text-rose-700 text-xs">
-                <AlertOctagon className="w-4 h-4" />
-                <span>Collision Crunch Active</span>
-              </div>
-              <p className="text-[11px] text-slate-600 leading-snug">
-                Week {weekNumber} has {data?.collidingCourses.length} concurrent major deadlines. Apply a minimal date shift below to restore equilibrium.
+            <div className="p-3.5 rounded-xl bg-semantic-danger-soft border border-semantic-danger-soft text-semantic-danger-fg text-xs space-y-1">
+              <span className="font-semibold block">Pekan ini bertabrakan</span>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                Pekan {weekNumber} memiliki {data?.collidingCourses.length} tenggat tugas besar yang bertabrakan. Gunakan solver di samping untuk menyeimbangkan beban.
               </p>
             </div>
           )}
         </div>
 
-        {/* Right Panel: Selected Assignment Detail & Minimal Date Move Solver */}
-        <div className="lg:col-span-8 space-y-6">
+        {/* Kolom Kanan: Rincian Tugas & Solver (col-span-8) */}
+        <div className="lg:col-span-8 space-y-5">
           {activeAssignment && (
-            <div className="trenning-card p-6 space-y-5">
-              {/* Header row */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className="text-xs font-extrabold px-2.5 py-1 rounded-lg text-white shadow-2xs"
-                    style={{ backgroundColor: activeAssignment.courseColor || "#2563EB" }}
-                  >
-                    {activeAssignment.courseCode}
-                  </span>
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 text-base leading-snug">
-                      {activeAssignment.title}
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      {activeAssignment.courseName} • Lecturer: {activeAssignment.lecturerName}
-                    </p>
+            <div className="cw-card p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-cw-line">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Tag>{activeAssignment.courseCode}</Tag>
+                    <span className="text-xs text-cw-faint">
+                      Dosen: {activeAssignment.lecturerName}
+                    </span>
                   </div>
+                  <h3 className="text-base font-semibold text-cw-ink mt-1">
+                    {activeAssignment.title}
+                  </h3>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedAssignmentForHelp(activeAssignment);
-                      setHelpModalOpen(true);
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#EEF0FD] text-[#5850EC] hover:bg-[#E0E3FC] text-xs font-bold transition-colors"
-                  >
-                    Ask Sub-topic Help
-                  </button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setSelectedAssignmentForHelp(activeAssignment);
+                    setHelpModalOpen(true);
+                  }}
+                >
+                  Minta bantuan sub-topik
+                </Button>
               </div>
 
-              {/* Assignment Meta Details (Image 4 form style) */}
+              {/* Rincian 3 Kolom */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">Due Date</span>
-                  <span className="font-bold text-slate-800 text-sm mt-0.5 block">
+                <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line">
+                  <span className="text-[11px] text-cw-faint block">Tenggat</span>
+                  <span className="text-xs font-semibold text-cw-ink mt-0.5 block">
                     {formatDate(activeAssignment.dueDate)}
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">Weight Score</span>
-                  <span className="font-bold text-slate-800 text-sm mt-0.5 block">
-                    {activeAssignment.weightScore} / 5 ({activeAssignment.isMajor ? "Major Task" : "Minor Task"})
+                <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line">
+                  <span className="text-[11px] text-cw-faint block">Bobot</span>
+                  <span className="text-xs font-semibold text-cw-ink mt-0.5 block">
+                    Bobot {activeAssignment.weightScore}/5 ({activeAssignment.isMajor ? "Tugas besar" : "Tugas biasa"})
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">Peer Help Density</span>
-                  <span className="font-bold text-indigo-600 text-sm mt-0.5 block">
-                    {activeAssignment.helpRequestsCount} Questions Asked
+                <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line">
+                  <span className="text-[11px] text-cw-faint block">Pertanyaan bantuan</span>
+                  <span className="text-xs font-semibold text-cw-accent mt-0.5 block">
+                    {activeAssignment.helpRequestsCount} pertanyaan
                   </span>
                 </div>
               </div>
 
-              {/* Sub-topics Tags */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-indigo-600" />
-                  Structured Sub-topic Tags:
-                </label>
+              {/* Sub-topik */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-xs font-medium text-cw-muted block">
+                  Sub-topik:
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   {activeAssignment.subtopics?.map((sub: string) => (
-                    <span
+                    <button
                       key={sub}
                       onClick={() => {
                         setSelectedAssignmentForHelp(activeAssignment);
                         setHelpModalOpen(true);
                       }}
-                      className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-[#F4F5F8] text-slate-700 hover:bg-[#EEF0FD] hover:text-[#5850EC] border border-[#E9ECF2] transition-colors cursor-pointer"
+                      type="button"
+                      className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-cw-sunken text-cw-ink hover:bg-cw-accent-soft hover:text-cw-accent transition-colors"
                     >
                       #{sub}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Minimal Date Move Solver Section (US-03, US-04) */}
+          {/* Panel Solver */}
           <DateMoveSolver
             candidates={data?.candidates || []}
             weekNumber={weekNumber}
@@ -313,14 +300,14 @@ export default function WeekInspectorPage() {
         </div>
       </div>
 
-      {/* Help Request Modal */}
+      {/* Modal Bantuan */}
       {selectedAssignmentForHelp && (
         <HelpRequestModal
           isOpen={helpModalOpen}
           onClose={() => setHelpModalOpen(false)}
           onSuccess={() => {
             fetchWeekData();
-            alert("Help request posted to class help board!");
+            showToast("Permintaan bantuan berhasil dikirim ke kelas!", "success");
           }}
           assignments={
             data?.assignments.map((a) => ({

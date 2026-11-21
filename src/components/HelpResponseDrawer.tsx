@@ -3,20 +3,19 @@
 import React, { useState } from "react";
 import { HelpRequestData, ResponseType } from "@/lib/types";
 import { useRole } from "@/context/RoleContext";
-import { formatDateTime, formatDate } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import {
   X,
-  CheckCircle,
   FileText,
   Video,
   Clock,
   Send,
   ExternalLink,
-  MessageSquare,
-  Sparkles,
-  AlertCircle,
-  Calendar,
 } from "lucide-react";
+import { Button } from "./ui/Button";
+import { Tag } from "./ui/Tag";
+import { Badge } from "./ui/Badge";
+import { useToast } from "./ui/Toast";
 
 interface HelpResponseDrawerProps {
   request: HelpRequestData | null;
@@ -32,6 +31,7 @@ export function HelpResponseDrawer({
   onUpdated,
 }: HelpResponseDrawerProps) {
   const { currentUser } = useRole();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<ResponseType>("WRITTEN");
   const [writtenContent, setWrittenContent] = useState("");
@@ -52,12 +52,13 @@ export function HelpResponseDrawer({
         method: "PATCH",
       });
       if (res.ok) {
+        showToast("Kendala berhasil ditandai selesai.", "success");
         onUpdated();
       } else {
-        alert("Failed to mark as resolved.");
+        showToast("Gagal menandai selesai.", "error");
       }
     } catch {
-      alert("Network error marking request resolved.");
+      showToast("Koneksi gagal saat menandai selesai.", "error");
     } finally {
       setIsResolving(false);
     }
@@ -72,27 +73,27 @@ export function HelpResponseDrawer({
 
     if (activeTab === "WRITTEN") {
       if (!writtenContent.trim()) {
-        setError("Please enter your written explanation.");
+        setError("Tuliskan penjelasan atau langkah penyelesaian.");
         return;
       }
       contentOrUrl = writtenContent.trim();
     } else if (activeTab === "RECORDED_LINK") {
       if (!recordedUrl.trim()) {
-        setError("Please provide the recording URL (Loom, YouTube, Drive, etc.).");
+        setError("Masukkan tautan rekaman (Loom, Drive, YouTube).");
         return;
       }
       contentOrUrl = recordedNotes.trim()
-        ? `${recordedUrl.trim()}\nNotes: ${recordedNotes.trim()}`
+        ? `${recordedUrl.trim()}\nCatatan: ${recordedNotes.trim()}`
         : recordedUrl.trim();
     } else if (activeTab === "SESSION_20MIN") {
       if (!sessionDateTime) {
-        setError("Please choose a suggested time slot for the 20-min session.");
+        setError("Tentukan jadwal untuk sesi 20 menit.");
         return;
       }
       scheduledSlot = new Date(sessionDateTime).toISOString();
       contentOrUrl = sessionNotes.trim()
-        ? `Proposed 20-Minute Micro-Session at ${sessionDateTime}. Agenda: ${sessionNotes.trim()}`
-        : `Proposed 20-Minute Micro-Session at ${sessionDateTime}.`;
+        ? `Usulan sesi 20 menit pada ${sessionDateTime}. Agenda: ${sessionNotes.trim()}`
+        : `Usulan sesi 20 menit pada ${sessionDateTime}.`;
     }
 
     try {
@@ -114,13 +115,14 @@ export function HelpResponseDrawer({
         setRecordedNotes("");
         setSessionDateTime("");
         setSessionNotes("");
+        showToast("Tanggapan berhasil dikirim!", "success");
         onUpdated();
       } else {
         const d = await res.json();
-        setError(d.error || "Failed to submit response.");
+        setError(d.error || "Gagal mengirim tanggapan.");
       }
     } catch {
-      setError("Network error sending response.");
+      setError("Koneksi gagal saat mengirim tanggapan.");
     } finally {
       setIsSubmitting(false);
     }
@@ -129,100 +131,95 @@ export function HelpResponseDrawer({
   const isResolved = request.status === "RESOLVED";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-2xl h-full shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200">
-        {/* Drawer Header */}
-        <div className="p-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
-                {request.assignment.course.courseCode}
-              </span>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-200">
-                #{request.subtopicLabel}
-              </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-end bg-cw-ink/40 backdrop-blur-[2px]">
+      <div className="bg-cw-surface w-full max-w-xl h-full shadow-modal flex flex-col border-l border-cw-line animate-scale-in">
+        {/* Header Drawer */}
+        <div className="p-5 border-b border-cw-line flex items-start justify-between sticky top-0 bg-cw-surface z-10">
+          <div className="space-y-1 pr-6">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Tag>{request.assignment.course.courseCode}</Tag>
+              <Tag>#{request.subtopicLabel}</Tag>
               {request.isUrgent && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse">
-                  Needs Peer Help (&gt;12h)
-                </span>
+                <Badge variant="danger" shape="pill">
+                  Butuh bantuan (&gt;12 jam)
+                </Badge>
               )}
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                  isResolved
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-amber-100 text-amber-800"
-                }`}
+              <Badge
+                variant={isResolved ? "success" : "neutral"}
+                shape="pill"
               >
-                {request.status}
-              </span>
+                {isResolved ? "Selesai" : "Terbuka"}
+              </Badge>
             </div>
-            <h3 className="font-bold text-slate-900 text-base">
+            <h3 className="font-semibold text-cw-ink text-base">
               {request.assignment.title}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Asked by <strong className="text-slate-700">{request.requester.name}</strong> • {formatDateTime(request.createdAt)}
+            <p className="text-xs text-cw-faint">
+              Ditanyakan {request.requester.name} · {formatDateTime(request.createdAt)}
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors"
+            aria-label="Tutup panel tanggapan"
+            className="p-1.5 rounded-xl text-cw-faint hover:text-cw-ink hover:bg-cw-sunken transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* Content Body (Scrollable) */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          {/* Question Box */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              Blocker Description
-            </h4>
-            <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+        {/* Badan Konten */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Kotak Pertanyaan / Kendala */}
+          <div className="p-4 rounded-xl bg-cw-subtle border border-cw-line space-y-1.5">
+            <span className="text-[11px] font-medium text-cw-faint block">
+              Kendala
+            </span>
+            <p className="text-[13px] text-cw-ink leading-relaxed whitespace-pre-wrap">
               {request.questionDetail}
             </p>
           </div>
 
-          {/* Resolution Banner & Button (US-07) */}
-          <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold text-emerald-900">
-                {isResolved ? "Problem Successfully Resolved 🎉" : "Ready to close this question?"}
-              </p>
-              <p className="text-[11px] text-emerald-700">
+          {/* Blok Status Penyelesaian */}
+          <div className="p-3.5 rounded-xl border border-cw-line bg-cw-surface flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isResolved ? "bg-semantic-success-ring" : "bg-semantic-warning-ring"
+                }`}
+              />
+              <span className="text-cw-muted">
                 {isResolved
-                  ? `Marked resolved on ${formatDateTime(request.resolvedAt)}`
-                  : "Both requester and helper can mark this request resolved to update class resolution KPIs."}
-              </p>
+                  ? `Selesai pada ${formatDateTime(request.resolvedAt)}`
+                  : "Penanya dan penolong sama-sama bisa menandai selesai."}
+              </span>
             </div>
+
             {!isResolved && (
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleResolve}
                 disabled={isResolving}
-                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors disabled:opacity-50 self-start sm:self-auto"
               >
-                <CheckCircle className="w-4 h-4" />
-                {isResolving ? "Resolving..." : "Mark as Resolved"}
-              </button>
+                {isResolving ? "Memproses..." : "Tandai selesai"}
+              </Button>
             )}
           </div>
 
-          {/* Response List */}
+          {/* Daftar Tanggapan Teman Sekelas */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-sky-600" />
-                Peer Responses ({request.responses.length})
+            <div className="flex items-center justify-between pb-1">
+              <h4 className="text-xs font-semibold text-cw-ink">
+                Tanggapan ({request.responses.length})
               </h4>
             </div>
 
             {request.responses.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <AlertCircle className="w-6 h-6 mx-auto mb-1 text-slate-300" />
-                <p className="text-xs font-medium">No peer responses yet.</p>
-                <p className="text-[11px] text-slate-400">
-                  Be the first classmate to unblock {request.requester.name}!
+              <div className="text-center py-8 text-cw-faint bg-cw-subtle rounded-xl border border-dashed border-cw-line">
+                <p className="text-xs font-medium text-cw-muted">Belum ada tanggapan.</p>
+                <p className="text-[11px] text-cw-faint mt-0.5">
+                  Jadilah yang pertama membantu {request.requester.name}.
                 </p>
               </div>
             ) : (
@@ -234,208 +231,175 @@ export function HelpResponseDrawer({
                 return (
                   <div
                     key={resp.id}
-                    className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2"
+                    className="p-3.5 rounded-xl border border-cw-line bg-cw-surface space-y-2 text-xs"
                   >
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-[10px]">
+                        <div className="w-5 h-5 rounded-full bg-cw-sunken flex items-center justify-center font-semibold text-[11px] text-cw-ink">
                           {resp.helper.name.charAt(0)}
                         </div>
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-semibold text-cw-ink">
                           {resp.helper.name}
                         </span>
-                        <span className="text-[10px] text-slate-400">
-                          ({resp.helper.role})
+                        <span className="text-[11px] text-cw-faint">
+                          ({resp.helper.role === "LECTURER" ? "Dosen" : "Mahasiswa"})
                         </span>
                       </div>
-
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                        <span className="font-medium text-slate-500">
-                          {isWritten && "📝 Written Explanation"}
-                          {isRecorded && "🎥 Video/Audio Link"}
-                          {isSession && "⏱️ 20-Min Session"}
-                        </span>
-                        <span>•</span>
-                        <span>{formatDateTime(resp.createdAt)}</span>
-                      </div>
+                      <span className="text-[11px] text-cw-faint">
+                        {formatDateTime(resp.createdAt)}
+                      </span>
                     </div>
 
-                    {/* Content Display */}
-                    {isWritten && (
-                      <div className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg leading-relaxed whitespace-pre-wrap font-sans">
-                        {resp.contentOrUrl}
-                      </div>
-                    )}
+                    <div className="text-[13px] text-cw-muted leading-relaxed">
+                      {isWritten && (
+                        <p className="whitespace-pre-wrap">{resp.contentOrUrl}</p>
+                      )}
 
-                    {isRecorded && (
-                      <div className="text-xs bg-sky-50 border border-sky-200 p-3 rounded-lg">
-                        <p className="font-semibold text-sky-900 mb-1 flex items-center gap-1">
-                          <Video className="w-3.5 h-3.5 text-sky-600" />
-                          Screen Recording / Voice Memo Link:
-                        </p>
-                        <a
-                          href={resp.contentOrUrl.split("\n")[0]}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sky-700 hover:text-sky-900 underline flex items-center gap-1 font-medium break-all"
-                        >
-                          {resp.contentOrUrl.split("\n")[0]}
-                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                        </a>
-                        {resp.contentOrUrl.includes("Notes:") && (
-                          <p className="mt-2 text-slate-600 text-[11px]">
-                            {resp.contentOrUrl.substring(resp.contentOrUrl.indexOf("Notes:"))}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {isSession && (
-                      <div className="text-xs bg-amber-50 border border-amber-200 p-3 rounded-lg">
-                        <div className="flex items-center gap-2 text-amber-900 font-bold mb-1">
-                          <Clock className="w-4 h-4 text-amber-600" />
-                          <span>20-Minute Micro-Session Proposed</span>
+                      {isRecorded && (
+                        <div className="space-y-1">
+                          <a
+                            href={resp.contentOrUrl.split("\n")[0]}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-cw-accent hover:underline font-medium break-all"
+                          >
+                            <Video className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                            <span>Buka tautan rekaman</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} />
+                          </a>
+                          {resp.contentOrUrl.includes("\n") && (
+                            <p className="text-xs text-cw-faint">
+                              {resp.contentOrUrl.split("\n").slice(1).join("\n")}
+                            </p>
+                          )}
                         </div>
-                        {resp.scheduledSlot && (
-                          <p className="text-xs text-amber-800 font-medium mb-1">
-                            Slot: {formatDateTime(resp.scheduledSlot)}
-                          </p>
-                        )}
-                        <p className="text-slate-700 text-[11px]">
-                          {resp.contentOrUrl}
-                        </p>
-                      </div>
-                    )}
+                      )}
+
+                      {isSession && (
+                        <div className="p-2.5 rounded-lg bg-cw-subtle border border-cw-line space-y-1">
+                          <div className="flex items-center gap-1.5 text-cw-ink font-medium">
+                            <Clock className="w-3.5 h-3.5 text-cw-accent" strokeWidth={1.75} />
+                            <span>Sesi 20 menit diajukan</span>
+                          </div>
+                          <p className="text-xs text-cw-muted">{resp.contentOrUrl}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })
             )}
           </div>
+        </div>
 
-          {/* Form to Submit Response (3 Channels) */}
-          <div className="pt-4 border-t border-slate-200">
-            <h4 className="text-xs font-bold text-slate-900 mb-2.5 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Provide Peer Assistance (3 Inclusive Channels)
-            </h4>
+        {/* Form Kirim Tanggapan di Bagian Bawah */}
+        <div className="p-4 border-t border-cw-line bg-cw-surface space-y-3">
+          {/* Segmented Control 3 Tab */}
+          <div className="flex items-center bg-cw-sunken rounded-xl p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("WRITTEN")}
+              className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                activeTab === "WRITTEN"
+                  ? "bg-cw-surface text-cw-ink font-semibold shadow-sm"
+                  : "text-cw-muted hover:text-cw-ink"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span>Tulisan</span>
+            </button>
 
-            {/* Tabs */}
-            <div className="flex border-b border-slate-200 mb-3 text-xs font-medium">
-              <button
-                type="button"
-                onClick={() => setActiveTab("WRITTEN")}
-                className={`pb-2 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
-                  activeTab === "WRITTEN"
-                    ? "border-sky-600 text-sky-700 font-semibold"
-                    : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                1. Written Text
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("RECORDED_LINK")}
-                className={`pb-2 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
-                  activeTab === "RECORDED_LINK"
-                    ? "border-sky-600 text-sky-700 font-semibold"
-                    : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <Video className="w-3.5 h-3.5" />
-                2. Short Recorded Link
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("SESSION_20MIN")}
-                className={`pb-2 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
-                  activeTab === "SESSION_20MIN"
-                    ? "border-sky-600 text-sky-700 font-semibold"
-                    : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                3. 20-Min Session
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab("RECORDED_LINK")}
+              className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                activeTab === "RECORDED_LINK"
+                  ? "bg-cw-surface text-cw-ink font-semibold shadow-sm"
+                  : "text-cw-muted hover:text-cw-ink"
+              }`}
+            >
+              <Video className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span>Rekaman</span>
+            </button>
 
-            {error && (
-              <div className="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-                {error}
+            <button
+              type="button"
+              onClick={() => setActiveTab("SESSION_20MIN")}
+              className={`flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                activeTab === "SESSION_20MIN"
+                  ? "bg-cw-surface text-cw-ink font-semibold shadow-sm"
+                  : "text-cw-muted hover:text-cw-ink"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span>Sesi 20 menit</span>
+            </button>
+          </div>
+
+          {error && (
+            <p className="text-xs text-semantic-danger-fg font-medium">{error}</p>
+          )}
+
+          <form onSubmit={handleSendResponse} className="space-y-2.5">
+            {activeTab === "WRITTEN" && (
+              <textarea
+                value={writtenContent}
+                onChange={(e) => setWrittenContent(e.target.value)}
+                placeholder="Tulis penjelasan atau langkah penyelesaian..."
+                rows={3}
+                className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line p-2.5 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+              />
+            )}
+
+            {activeTab === "RECORDED_LINK" && (
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  value={recordedUrl}
+                  onChange={(e) => setRecordedUrl(e.target.value)}
+                  placeholder="Tempel tautan rekaman (Loom, Drive, YouTube)"
+                  className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line p-2 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+                />
+                <input
+                  type="text"
+                  value={recordedNotes}
+                  onChange={(e) => setRecordedNotes(e.target.value)}
+                  placeholder="Catatan singkat (opsional)"
+                  className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line p-2 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+                />
               </div>
             )}
 
-            <form onSubmit={handleSendResponse} className="space-y-3">
-              {activeTab === "WRITTEN" && (
-                <div>
-                  <textarea
-                    rows={4}
-                    placeholder="Provide your solution explanation or step-by-step code guidance here..."
-                    value={writtenContent}
-                    onChange={(e) => setWrittenContent(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:outline-hidden leading-relaxed"
-                  ></textarea>
-                </div>
-              )}
-
-              {activeTab === "RECORDED_LINK" && (
-                <div className="space-y-2">
-                  <input
-                    type="url"
-                    placeholder="Paste Loom / Google Drive / YouTube recording URL..."
-                    value={recordedUrl}
-                    onChange={(e) => setRecordedUrl(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Short description / timestamp notes (optional)..."
-                    value={recordedNotes}
-                    onChange={(e) => setRecordedNotes(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
-                  />
-                </div>
-              )}
-
-              {activeTab === "SESSION_20MIN" && (
-                <div className="space-y-2 bg-amber-50/50 p-3 rounded-xl border border-amber-200">
-                  <div className="flex items-center justify-between text-[11px] text-amber-900 font-semibold">
-                    <span>Propose a 20-Minute Focus Slot:</span>
-                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
-                      Planned for Final Day: Auto-Matcher
-                    </span>
-                  </div>
-                  <input
-                    type="datetime-local"
-                    value={sessionDateTime}
-                    onChange={(e) => setSessionDateTime(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Meeting link (Google Meet / Zoom) or notes..."
-                    value={sessionNotes}
-                    onChange={(e) => setSessionNotes(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-400">
-                  Responding as <strong>{currentUser?.name}</strong>
-                </span>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  {isSubmitting ? "Sending..." : "Submit Response"}
-                </button>
+            {activeTab === "SESSION_20MIN" && (
+              <div className="space-y-2">
+                <input
+                  type="datetime-local"
+                  value={sessionDateTime}
+                  onChange={(e) => setSessionDateTime(e.target.value)}
+                  className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line p-2 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+                />
+                <input
+                  type="text"
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                  placeholder="Tautan rapat (Meet/Zoom) atau catatan"
+                  className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line p-2 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+                />
               </div>
-            </form>
-          </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                type="submit"
+                disabled={isSubmitting}
+              >
+                <Send className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <span>{isSubmitting ? "Mengirim..." : "Kirim tanggapan"}</span>
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

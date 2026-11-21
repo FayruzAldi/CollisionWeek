@@ -1,21 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CircularProgressRing } from "@/components/CircularProgressRing";
-import {
-  BarChart3,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  BookOpen,
-  FileSpreadsheet,
-  Download,
-  ShieldAlert,
-  ArrowRight,
-  Filter,
-} from "lucide-react";
+import { MetricRing } from "@/components/ui/MetricRing";
+import { Tag } from "@/components/ui/Tag";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 
 interface SubtopicStat {
   subtopic: string;
@@ -52,6 +43,7 @@ export default function LecturerAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [courseFilter, setCourseFilter] = useState("all");
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
 
   const fetchAnalytics = async () => {
     try {
@@ -66,7 +58,7 @@ export default function LecturerAnalyticsPage() {
         setData(json);
       }
     } catch (err) {
-      console.error("Failed to load analytics:", err);
+      console.error("Gagal memuat analitik:", err);
     } finally {
       setLoading(false);
     }
@@ -76,173 +68,197 @@ export default function LecturerAnalyticsPage() {
     fetchAnalytics();
   }, [courseFilter]);
 
-  const maxRequests = Math.max(...(data?.rankings.map((r) => r.totalRequests) || [1]), 1);
-
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-7">
+      {/* Header Halaman */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-cw-line">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Academic Sub-topic Friction Analytics
-            </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EEF0FD] text-[#5850EC]">
-              Lecturer Insights (US-08)
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-semibold tracking-tight text-cw-ink">
+              Analitik Sub-topik
+            </h2>
+            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-cw-sunken text-cw-muted">
+              Untuk dosen
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Evaluates which assignment sub-topics cause the highest friction to guide review sessions and deadline pacing
+          <p className="text-xs text-cw-muted mt-0.5">
+            Menunjukkan sub-topik tugas yang paling sering menjadi kendala, untuk menentukan sesi review dan pengaturan tenggat.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            Final Day Milestone #3: Export RPS Report
-          </span>
-        </div>
+        <select
+          value={courseFilter}
+          onChange={(e) => setCourseFilter(e.target.value)}
+          aria-label="Filter berdasarkan matkul"
+          className="text-xs rounded-xl bg-cw-surface border border-cw-line px-3 py-1.5 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40 self-start sm:self-auto"
+        >
+          <option value="all">Semua matkul</option>
+          <option value="IF2110">IF2110 · Sistem Basis Data</option>
+          <option value="IF2120">IF2120 · Rekayasa Perangkat Lunak</option>
+          <option value="IF2130">IF2130 · Jaringan Komputer</option>
+          <option value="IF2140">IF2140 · Desain &amp; Analisis Algoritma</option>
+          <option value="IF2150">IF2150 · Sistem Operasi</option>
+          <option value="IF2160">IF2160 · Kecerdasan Buatan</option>
+        </select>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="trenning-card p-5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium">Total Questions</p>
-          <p className="text-2xl font-black text-slate-900">
-            {data?.summary.totalRequests ?? 0}
-          </p>
-          <span className="text-[11px] text-slate-400">Tracked across 6 courses</span>
-        </div>
-
-        <div className="trenning-card p-5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium">Resolution Rate</p>
-          <p className="text-2xl font-black text-emerald-600">
-            {data?.summary.overallResolutionRate ?? 0}%
-          </p>
-          <span className="text-[11px] text-emerald-600 font-semibold">
-            {data?.summary.resolvedTotal ?? 0} resolved by peers
-          </span>
-        </div>
-
-        <div className="trenning-card p-5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium">Avg First Response</p>
-          <p className="text-2xl font-black text-[#5850EC]">
-            {data?.summary.overallAvgFirstResponseHours ?? 0}h
-          </p>
-          <span className="text-[11px] text-slate-400">Target SLA: &lt; 24h</span>
-        </div>
-
-        <div className="trenning-card p-5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium">High Friction Topics</p>
-          <p className="text-2xl font-black text-rose-600">
-            {data?.summary.criticalSubtopicsCount ?? 0}
-          </p>
-          <span className="text-[11px] text-rose-600 font-semibold">
-            Pedagogical review recommended
-          </span>
-        </div>
-      </div>
-
-      {/* Subtopic Density Ranking List */}
-      <div className="trenning-card p-6 space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div>
-            <h3 className="font-extrabold text-slate-900 text-base">
-              Sub-topic Inquiry Density Ranking
-            </h3>
-            <p className="text-xs text-slate-500">
-              Ranked by student question volume. Topics with resolution &lt; 60% are highlighted for faculty intervention.
-            </p>
+      {/* 4 Metrik sebagai Baris Tanpa Kartu Dipisah Hairline Vertikal */}
+      <div className="cw-card p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-cw-line">
+          {/* Metrik 1 */}
+          <div className="p-4 sm:px-6 first:pl-0">
+            <span className="text-[11px] font-medium text-cw-faint block">
+              Total pertanyaan
+            </span>
+            <span className="text-[22px] font-semibold text-cw-ink tabular-nums block mt-0.5">
+              {data?.summary.totalRequests ?? 0}
+            </span>
+            <span className="text-xs text-cw-muted mt-0.5 block">
+              Dari 6 matkul
+            </span>
           </div>
+
+          {/* Metrik 2 */}
+          <div className="p-4 sm:px-6">
+            <span className="text-[11px] font-medium text-cw-faint block">
+              Tingkat selesai
+            </span>
+            <span className="text-[22px] font-semibold text-semantic-success-fg tabular-nums block mt-0.5">
+              {data?.summary.overallResolutionRate ?? 0}%
+            </span>
+            <span className="text-xs text-cw-muted mt-0.5 block">
+              {data?.summary.resolvedTotal ?? 0} selesai lewat bantuan sebaya
+            </span>
+          </div>
+
+          {/* Metrik 3 */}
+          <div className="p-4 sm:px-6">
+            <span className="text-[11px] font-medium text-cw-faint block">
+              Respons pertama
+            </span>
+            <span className="text-[22px] font-semibold text-cw-ink tabular-nums block mt-0.5">
+              {data?.summary.overallAvgFirstResponseHours ?? 0} jam
+            </span>
+            <span className="text-xs text-cw-muted mt-0.5 block">
+              Target &lt; 24 jam
+            </span>
+          </div>
+
+          {/* Metrik 4 */}
+          <div className="p-4 sm:px-6 last:pr-0">
+            <span className="text-[11px] font-medium text-cw-faint block">
+              Topik berisiko
+            </span>
+            <span className="text-[22px] font-semibold text-semantic-danger-fg tabular-nums block mt-0.5">
+              {data?.summary.criticalSubtopicsCount ?? 0}
+            </span>
+            <span className="text-xs text-cw-muted mt-0.5 block">
+              Perlu sesi review
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Peringkat Sub-topik */}
+      <div className="cw-card p-6 space-y-4">
+        <div>
+          <h3 className="text-base font-semibold text-cw-ink">
+            Peringkat sub-topik
+          </h3>
+          <p className="text-xs text-cw-muted mt-0.5">
+            Diurutkan dari jumlah pertanyaan. Sub-topik dengan tingkat selesai di bawah 60% ditandai.
+          </p>
         </div>
 
         {loading ? (
           <div className="space-y-3">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-white animate-pulse">
-                <div className="flex gap-4">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-slate-100 rounded-full w-1/4" />
-                    <div className="h-2 bg-slate-100 rounded-full w-full" />
-                    <div className="h-8 bg-slate-100 rounded-xl w-full" />
-                  </div>
-                  <div className="w-24 h-16 bg-slate-100 rounded-2xl flex-shrink-0" />
-                </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-3.5 cw-hairline space-y-2">
+                <Skeleton className="h-4 w-1/4 rounded-md" />
+                <Skeleton className="h-3 w-3/4 rounded-md" />
               </div>
             ))}
           </div>
+        ) : !data?.rankings.length ? (
+          <EmptyState
+            icon={BarChart3}
+            title="Belum ada data analitik"
+            description="Pertanyaan bantuan sebaya yang diajukan mahasiswa akan teragregasi di sini."
+          />
         ) : (
-          <div className="space-y-3.5">
-            {data?.rankings.map((stat, idx) => {
+          <div className="divide-y divide-cw-line">
+            {data.rankings.map((stat, idx) => {
               const isCritical = stat.severity === "CRITICAL";
-              const isWarning = stat.severity === "WARNING";
-              const barWidth = Math.max(15, Math.round((stat.totalRequests / maxRequests) * 100));
+              const isExpanded = expandedTopic === `${stat.courseCode}-${stat.subtopic}`;
 
               return (
                 <div
                   key={`${stat.courseCode}-${stat.subtopic}`}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    isCritical
-                      ? "border-rose-200 bg-rose-50/40"
-                      : isWarning
-                      ? "border-amber-200 bg-amber-50/30"
-                      : "border-slate-200 bg-white"
-                  }`}
+                  className="py-3.5 first:pt-1 last:pb-1 space-y-2"
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-slate-400">#{idx + 1}</span>
-                        <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded text-white"
-                          style={{ backgroundColor: stat.courseColor || "#2563EB" }}
-                        >
-                          {stat.courseCode}
-                        </span>
-                        <h4 className="font-extrabold text-slate-900 text-sm">
-                          {stat.subtopic}
-                        </h4>
-                        {isCritical && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 shadow-2xs">
-                            <ShieldAlert className="w-3 h-3" />
-                            High Friction
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Bar indicator */}
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            isCritical ? "bg-rose-600" : isWarning ? "bg-amber-500" : "bg-[#5850EC]"
-                          }`}
-                          style={{ width: `${barWidth}%` }}
-                        ></div>
-                      </div>
-
-                      {/* Recommendation text */}
-                      <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 leading-relaxed">
-                        <strong className="text-slate-900 font-bold">Pedagogical Recommendation: </strong>
-                        {stat.recommendation}
-                      </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-xs font-semibold text-cw-faint w-5 text-right tabular-nums">
+                        #{idx + 1}
+                      </span>
+                      <Tag>{stat.courseCode}</Tag>
+                      <h4 className="text-[13px] font-semibold text-cw-ink truncate">
+                        {stat.subtopic}
+                      </h4>
+                      {isCritical && (
+                        <Badge variant="danger" shape="pill">
+                          Berisiko
+                        </Badge>
+                      )}
                     </div>
 
-                    {/* Stats ring / boxes */}
-                    <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-2xs self-start lg:self-auto">
-                      <div className="text-center px-2">
-                        <span className="text-[10px] text-slate-400 font-medium block">Inquiries</span>
-                        <span className="text-lg font-black text-slate-900">{stat.totalRequests}</span>
+                    <div className="flex items-center gap-6 self-end sm:self-auto flex-shrink-0">
+                      <div className="text-right">
+                        <span className="text-[11px] text-cw-faint block">Pertanyaan</span>
+                        <span className="text-xs font-semibold text-cw-ink tabular-nums">
+                          {stat.totalRequests}
+                        </span>
                       </div>
-                      <div className="w-px h-8 bg-slate-100"></div>
-                      <CircularProgressRing
-                        value={stat.resolutionRate}
-                        size={36}
-                        strokeWidth={4}
-                        color={stat.resolutionRate >= 60 ? "#10B981" : "#EF4444"}
-                        label="Resolved"
-                      />
+
+                      <div className="w-24">
+                        <MetricRing
+                          value={stat.resolutionRate}
+                          max={100}
+                          label="Selesai"
+                          unit="%"
+                          tone={stat.resolutionRate >= 60 ? "success" : "danger"}
+                          size={28}
+                        />
+                      </div>
+
+                      {stat.recommendation && (
+                        <button
+                          onClick={() =>
+                            setExpandedTopic(
+                              isExpanded ? null : `${stat.courseCode}-${stat.subtopic}`
+                            )
+                          }
+                          type="button"
+                          aria-label="Lihat saran pedagogis"
+                          className="p-1 rounded-lg text-cw-faint hover:text-cw-ink hover:bg-cw-sunken transition-colors"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" strokeWidth={1.75} />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
+
+                  {/* Saran pedagogis (disclosure) */}
+                  {isExpanded && stat.recommendation && (
+                    <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line text-xs text-cw-muted leading-relaxed">
+                      <strong className="text-cw-ink font-semibold">Saran: </strong>
+                      {stat.recommendation}
+                    </div>
+                  )}
                 </div>
               );
             })}

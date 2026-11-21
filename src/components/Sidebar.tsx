@@ -5,237 +5,226 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
 import {
-  Calendar,
-  AlertTriangle,
+  LayoutDashboard,
+  CalendarDays,
   Users,
   BarChart3,
   Upload,
-  Info,
   ChevronDown,
-  ChevronRight,
-  BookOpen,
-  Zap,
-  ChevronLeft,
+  UserCheck,
 } from "lucide-react";
 
 interface SidebarProps {
-  onOpenContentModal: () => void;
   onOpenSolverModal: () => void;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export function Sidebar({ onOpenContentModal, onOpenSolverModal }: SidebarProps) {
+export function Sidebar({
+  onOpenSolverModal,
+  isMobileOpen = false,
+  onMobileClose,
+}: SidebarProps) {
   const pathname = usePathname();
   const { currentUser, users, setCurrentUser, role } = useRole();
-  const [coursesOpen, setCoursesOpen] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
-    { href: "/", label: "Semester Heat Map", icon: Calendar },
-    { href: "/weeks/8", label: "Week Inspector", icon: AlertTriangle },
-    { href: "/help", label: "Peer Help Board", icon: Users },
-    { href: "/analytics", label: "Lecturer Analytics", icon: BarChart3 },
-    { href: "/import", label: "Schedule Ingestion", icon: Upload },
-    { href: "/about", label: "About & Team", icon: Info },
+    { href: "/", label: "Peta Beban", icon: LayoutDashboard },
+    { href: "/weeks/8", label: "Pekan Kritis", icon: CalendarDays, badge: 2 },
+    { href: "/help", label: "Bantuan Sebaya", icon: Users },
+    { href: "/analytics", label: "Analitik Dosen", icon: BarChart3 },
+    { href: "/import", label: "Impor Jadwal", icon: Upload },
   ];
 
-  const courses = [
-    { code: "IF2110", name: "Database Systems", color: "#2563EB" },
-    { code: "IF2120", name: "Software Engineering", color: "#059669" },
-    { code: "IF2130", name: "Computer Networks", color: "#7C3AED" },
-    { code: "IF2140", name: "Design & Analysis of Algorithms", color: "#D97706" },
-    { code: "IF2150", name: "Operating Systems", color: "#DB2777" },
-    { code: "IF2160", name: "Artificial Intelligence", color: "#0891B2" },
+  const favorites = [
+    { href: "/weeks/8", label: "Pekan 8" },
+    { href: "/weeks/14", label: "Pekan 14" },
+    { href: "/help", label: "Bantuan Saya" },
   ];
 
-  return (
-    <aside
-      className={`bg-white border-r border-[#E9ECF2] min-h-[100dvh] sticky top-0 flex flex-col justify-between transition-all duration-200 z-30 ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
-    >
-      {/* Top Brand & Header */}
-      <div>
-        <div className="p-4 px-5 flex items-center justify-between border-b border-[#F1F3F8]">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#5850EC] flex items-center justify-center text-white font-extrabold text-sm shadow-sm shadow-indigo-500/30 flex-shrink-0">
-              cw
-            </div>
-            {!isCollapsed && (
-              <div>
-                <span className="font-bold text-slate-900 text-sm tracking-tight block leading-tight">
-                  collision week
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block">
-                  academic load balance
-                </span>
-              </div>
-            )}
-          </Link>
+  const content = (
+    <div className="w-[264px] bg-cw-surface border-r border-cw-line h-dvh sticky top-0 flex flex-col justify-between p-4 z-20 overflow-y-auto">
+      {/* Top Section */}
+      <div className="space-y-6">
+        {/* Workspace Title */}
+        <div className="pb-2 border-b border-cw-line">
+          <h2 className="text-base font-semibold text-cw-ink">Ruang Akademik</h2>
+          <p className="text-xs text-cw-faint mt-0.5">
+            Teknik Informatika · Semester Ganjil
+          </p>
+        </div>
 
+        {/* Quick Links */}
+        <div className="space-y-1">
+          <p className="text-[11px] font-medium text-cw-faint px-2 mb-1.5">
+            MENU UTAMA
+          </p>
+          <nav className="space-y-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onMobileClose}
+                  className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40 ${
+                    isActive
+                      ? "bg-cw-accent-soft text-cw-accent font-semibold"
+                      : "text-cw-muted hover:text-cw-ink hover:bg-cw-subtle"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-semantic-danger-soft text-semantic-danger-fg">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Favorit */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[11px] font-medium text-cw-faint">FAVORIT</span>
+            <span className="text-xs text-cw-faint">3</span>
+          </div>
+          <div className="space-y-0.5">
+            {favorites.map((fav) => (
+              <Link
+                key={fav.href + fav.label}
+                href={fav.href}
+                onClick={onMobileClose}
+                className="block px-2.5 py-1.5 rounded-xl text-xs text-cw-muted hover:text-cw-ink hover:bg-cw-subtle transition-colors"
+              >
+                {fav.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Proyek / Program */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[11px] font-medium text-cw-faint">PROYEK</span>
+            <span className="text-xs text-cw-faint">1</span>
+          </div>
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-cw-ink bg-cw-subtle">
+            <span className="w-1.5 h-1.5 rounded-full bg-cw-accent flex-shrink-0" />
+            <span className="truncate">Teknik Informatika</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="space-y-3 pt-4 border-t border-cw-line">
+        {/* Promo card: Solver Deterministik */}
+        <div className="rounded-2xl bg-cw-subtle border border-cw-line p-3.5 space-y-1.5">
+          <h4 className="text-[13px] font-semibold text-cw-ink">
+            Solver Deterministik
+          </h4>
+          <p className="text-xs text-cw-muted leading-relaxed">
+            Menghitung pergeseran tanggal terkecil untuk menurunkan puncak beban
+            tanpa tabrakan baru.
+          </p>
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors active:scale-[0.98]"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            onClick={() => {
+              if (onMobileClose) onMobileClose();
+              onOpenSolverModal();
+            }}
+            type="button"
+            className="text-xs font-semibold text-cw-accent hover:text-cw-accent-hover flex items-center gap-1 pt-0.5"
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" strokeWidth={1.5} /> : <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />}
+            <span>Jalankan</span>
+            <span>→</span>
           </button>
         </div>
 
-        {/* Main Navigation */}
-        <nav className="p-3 space-y-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  isActive
-                    ? "bg-[#EEF0FD] text-[#5850EC]"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-[#5850EC]" : "text-slate-400"}`} strokeWidth={isActive ? 2 : 1.5} />
-                {!isCollapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Courses Accordion */}
-        {!isCollapsed && (
-          <div className="px-4 py-2 border-t border-[#F1F3F8] mt-1">
-            <button
-              onClick={() => setCoursesOpen(!coursesOpen)}
-              className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-400 hover:text-slate-600 py-1.5"
-            >
-              <span className="flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Courses ({courses.length})
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${coursesOpen ? "rotate-0" : "-rotate-90"}`} strokeWidth={1.5} />
-            </button>
-
-            {coursesOpen && (
-              <div className="space-y-0.5 mt-1 max-h-40 overflow-y-auto pr-1">
-                {courses.map((c) => (
-                  <Link
-                    key={c.code}
-                    href={`/help?courseCode=${c.code}`}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: c.color }}
-                    ></span>
-                    <span className="truncate">{c.code} {c.name}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Area: Promo Card & User Switcher */}
-      <div className="p-3 border-t border-[#F1F3F8] space-y-2.5">
-        {/* Deterministic Solver promo card */}
-        {!isCollapsed && (
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-[#F5F6FE] to-[#EEF0FD] border border-[#E0E3FC] text-xs space-y-1.5">
-            <div className="flex items-center gap-1.5 font-bold text-[#5850EC]">
-              <Zap className="w-3.5 h-3.5" strokeWidth={2} />
-              <span>Deterministic Solver</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Calculates minimal date shifts to balance peak crunches without new collisions.
-            </p>
-            <button
-              onClick={onOpenSolverModal}
-              className="text-[11px] font-bold text-[#5850EC] hover:text-[#4B41DE] flex items-center gap-1 pt-0.5 active:scale-[0.98] transition-transform"
-            >
-              <span>Solve Collisions</span>
-              <span>→</span>
-            </button>
-          </div>
-        )}
-
-        {/* User Profile & Persona Switcher */}
+        {/* Ganti Peran Demo */}
         <div className="relative">
           <button
             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-            className="w-full flex items-center gap-2.5 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition-all bg-white active:scale-[0.98]"
+            type="button"
+            className="w-full flex items-center justify-between p-2 rounded-xl border border-cw-line bg-cw-surface hover:bg-cw-subtle text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
           >
-            <div className="w-8 h-8 rounded-xl bg-indigo-100 text-[#5850EC] font-black text-xs flex items-center justify-center overflow-hidden flex-shrink-0">
-              {currentUser?.avatarUrl ? (
-                <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-              ) : (
-                currentUser?.name?.charAt(0) || "U"
-              )}
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-800 truncate leading-tight">
-                  {currentUser?.name || "Loading..."}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-cw-accent-soft text-cw-accent flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                <UserCheck className="w-4 h-4" strokeWidth={1.75} />
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-semibold text-cw-ink truncate">
+                  {currentUser?.name || "Memuat..."}
                 </p>
-                <p className="text-[10px] text-slate-500 font-medium truncate">
-                  <span className="font-bold text-[#5850EC] uppercase">{role}</span>
+                <p className="text-[11px] text-cw-faint truncate">
+                  Peran: {role === "ADMIN" ? "Admin" : role === "LECTURER" ? "Dosen" : "Mahasiswa"}
                 </p>
               </div>
-            )}
-            {!isCollapsed && <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" strokeWidth={1.5} />}
+            </div>
+            <ChevronDown className="w-4 h-4 text-cw-faint flex-shrink-0" strokeWidth={1.75} />
           </button>
 
           {userDropdownOpen && (
-            <div
-              className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50"
-              onClick={() => setUserDropdownOpen(false)}
-            >
-              <div className="px-3 py-1.5 border-b border-slate-100">
-                <p className="text-[10px] font-semibold text-slate-400">
-                  Switch Persona (Demo)
+            <div className="absolute bottom-full left-0 mb-2 w-full bg-cw-surface rounded-2xl shadow-modal border border-cw-line py-2 z-50">
+              <div className="px-3 py-1.5 border-b border-cw-line">
+                <p className="text-[11px] font-medium text-cw-faint">
+                  Ganti peran (demo)
                 </p>
               </div>
-
-              <div className="max-h-56 overflow-y-auto py-1">
-                {users.map((u) => {
-                  const isSelected = u.id === currentUser?.id;
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => setCurrentUser(u)}
-                      className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-slate-50 text-xs ${
-                        isSelected ? "bg-indigo-50/60 font-semibold text-[#5850EC]" : "text-slate-700"
-                      }`}
-                    >
-                      <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-[10px]">
-                        {u.name.charAt(0)}
-                      </span>
-                      <div className="flex-1 truncate">
-                        <span className="block truncate">{u.name}</span>
-                        <span className="text-[9px] text-slate-400 uppercase font-semibold">{u.role}</span>
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="max-h-48 overflow-y-auto py-1">
+                {users.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => {
+                      setCurrentUser(u);
+                      setUserDropdownOpen(false);
+                    }}
+                    type="button"
+                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-cw-subtle ${
+                      u.id === currentUser?.id
+                        ? "text-cw-accent font-semibold bg-cw-accent-soft/40"
+                        : "text-cw-ink"
+                    }`}
+                  >
+                    <span className="truncate">{u.name}</span>
+                    <span className="text-[11px] text-cw-faint ml-2 flex-shrink-0">
+                      {u.role === "ADMIN" ? "Admin" : u.role === "LECTURER" ? "Dosen" : "Mhs"}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
         </div>
-
-        {/* Competition context — moved from the dark top bar */}
-        {!isCollapsed && (
-          <p className="text-[9px] text-slate-400 text-center leading-relaxed px-1">
-            GDGoC ITB STACK 2026 · Case 1: Smarter Campus and Learning
-          </p>
-        )}
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop view */}
+      <div className="hidden lg:block flex-shrink-0">{content}</div>
+
+      {/* Mobile drawer */}
+      {isMobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div
+            className="fixed inset-0 bg-cw-ink/40 backdrop-blur-[2px]"
+            onClick={onMobileClose}
+          />
+          <div className="relative z-50 animate-scale-in">{content}</div>
+        </div>
+      )}
+    </>
   );
 }

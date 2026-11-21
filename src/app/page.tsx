@@ -1,14 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { HeatMapGrid } from "@/components/HeatMapGrid";
-import { PastelIllustration } from "@/components/PastelIllustrations";
+import { WideWeekCard } from "@/components/WideWeekCard";
+import { CardSkeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
 import { useModals } from "@/context/ModalContext";
-import {
-  Zap,
-  ChevronRight,
-} from "lucide-react";
 
 interface HeatMapData {
   program: {
@@ -41,7 +38,7 @@ export default function HomePage() {
         setData(json);
       }
     } catch (err) {
-      console.error("Failed to load heatmap data:", err);
+      console.error("Gagal memuat data peta beban:", err);
     } finally {
       setLoading(false);
     }
@@ -55,202 +52,92 @@ export default function HomePage() {
   const week14Metric = data?.metrics.find((m) => m.weekNumber === 14);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8 animate-fade-in-up">
-      {/* Critical Crunch Weeks */}
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-7">
+      {/* 1. Header Halaman */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-cw-line">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-xl font-semibold tracking-tight text-cw-ink">
+            Peta Beban Semester
+          </h2>
+          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-cw-sunken text-cw-muted">
+            {data?.summary.totalWeeks || 16} pekan
+          </span>
+        </div>
+
+        <p className="text-xs text-cw-muted">
+          Program: <span className="font-semibold text-cw-ink">{data?.program.name || "Teknik Informatika"}</span>
+        </p>
+      </div>
+
+      {/* 2. Seksi Pekan Paling Padat */}
       <section className="space-y-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-              Critical Crunch Weeks
-            </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
-              {data?.summary.flaggedWeeksCount || 2} Flagged
+            <h3 className="text-base font-semibold text-cw-ink">
+              Pekan Paling Padat
+            </h3>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-semantic-danger-soft text-semantic-danger-fg">
+              {data?.summary.flaggedWeeksCount || 2} pekan kritis
             </span>
           </div>
 
-          <button
-            onClick={openSolverModal}
-            className="text-xs font-semibold text-[#5850EC] hover:text-indigo-800 flex items-center gap-1 transition-colors active:scale-[0.98]"
-          >
-            <span>Launch Solver</span>
-            <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={openSolverModal} type="button">
+            <span>Buka solver</span>
+            <span>→</span>
+          </Button>
         </div>
 
         {loading ? (
-          /* Skeleton — matches 2-col card layout */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {[0, 1].map((i) => (
-              <div key={i} className="bg-white border border-[#E9ECF2] rounded-2xl p-5 animate-pulse">
-                <div className="flex gap-4">
-                  <div className="w-44 h-28 rounded-2xl bg-slate-100 flex-shrink-0" />
-                  <div className="flex-1 space-y-3">
-                    <div className="h-3 bg-slate-100 rounded-full w-1/3" />
-                    <div className="h-4 bg-slate-100 rounded-full w-3/4" />
-                    <div className="h-2 bg-slate-100 rounded-full w-full" />
-                    <div className="h-2 bg-slate-100 rounded-full w-2/3" />
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         ) : (
-          /* 2 Wide Horizontal Featured Cards */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Card 1: Week 8 */}
-            <div className="trenning-card p-5 flex flex-col justify-between">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:w-44 h-28 rounded-2xl relative overflow-hidden flex-shrink-0 border border-slate-100">
-                  <PastelIllustration type="laptop" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-slate-900/80 text-white text-[10px] font-bold">
-                    Week 8 · 4 Major Tasks
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Kartu 1: Pekan 8 */}
+            <WideWeekCard
+              weekNumber={8}
+              title="Ujian Tengah Semester & Tenggat Proyek Besar"
+              collisionCount={week8Metric?.collisionCount || 4}
+              loadIndex={week8Metric?.loadIndex || 16}
+              courses={week8Metric?.courses || ["IF2110", "IF2120", "IF2130", "IF2150"]}
+              recommendation="Optimal: geser Proyek Basis Data ke Pekan 9 agar Cw turun ke 3"
+              palette="koral"
+              illustrationType="laptop"
+            />
 
-                <div className="flex-1 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
-                      Midterm Collision (Cw = 4)
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      IF2110, IF2120, IF2130, IF2150
-                    </span>
-                  </div>
-
-                  <h3 className="font-semibold text-slate-900 text-sm leading-snug">
-                    Midterm Examination &amp; Major Project Crunch
-                  </h3>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Load Density</span>
-                      <span className="font-bold text-rose-600">
-                        {week8Metric?.loadIndex || 16} pts — Critical
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-rose-500 h-full rounded-full w-[95%]"></div>
-                    </div>
-                  </div>
-
-                  <div className="pt-1 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400">High student load clustering</span>
-                    <Link
-                      href="/weeks/8"
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors active:scale-[0.98]"
-                    >
-                      Inspect &amp; Shift
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommendation footer */}
-              <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-indigo-700 bg-[#F4F5FF] border border-[#E0E3FC] p-2 px-3 rounded-xl">
-                <span className="flex items-center gap-1.5 font-medium truncate">
-                  <Zap className="w-3.5 h-3.5 flex-shrink-0 text-[#5850EC]" strokeWidth={2} />
-                  <span className="truncate">
-                    Optimal: Shift Database Project to Week 9 to reduce C to 3
-                  </span>
-                </span>
-                <Link href="/weeks/8" className="font-bold hover:underline flex-shrink-0 ml-2 active:scale-[0.98]">
-                  Apply →
-                </Link>
-              </div>
-            </div>
-
-            {/* Card 2: Week 14 */}
-            <div className="trenning-card p-5 flex flex-col justify-between">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:w-44 h-28 rounded-2xl relative overflow-hidden flex-shrink-0 border border-slate-100">
-                  <PastelIllustration type="notebook" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-slate-900/80 text-white text-[10px] font-bold">
-                    Week 14 · 3 Major Tasks
-                  </div>
-                </div>
-
-                <div className="flex-1 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                      Pre-Final Collision (Cw = 3)
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      IF2110, IF2120, IF2160
-                    </span>
-                  </div>
-
-                  <h3 className="font-semibold text-slate-900 text-sm leading-snug">
-                    End-of-Semester Project Milestones Crunch
-                  </h3>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Load Density</span>
-                      <span className="font-bold text-amber-600">
-                        {week14Metric?.loadIndex || 14} pts — High Load
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-500 h-full rounded-full w-[80%]"></div>
-                    </div>
-                  </div>
-
-                  <div className="pt-1 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400">Pre-final submissions clash</span>
-                    <Link
-                      href="/weeks/14"
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors active:scale-[0.98]"
-                    >
-                      Inspect &amp; Shift
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-indigo-700 bg-[#F4F5FF] border border-[#E0E3FC] p-2 px-3 rounded-xl">
-                <span className="flex items-center gap-1.5 font-medium truncate">
-                  <Zap className="w-3.5 h-3.5 flex-shrink-0 text-[#5850EC]" strokeWidth={2} />
-                  <span className="truncate">
-                    Optimal: Shift AI Project to Week 15 to reduce C to 2
-                  </span>
-                </span>
-                <Link href="/weeks/14" className="font-bold hover:underline flex-shrink-0 ml-2 active:scale-[0.98]">
-                  Apply →
-                </Link>
-              </div>
-            </div>
+            {/* Kartu 2: Pekan 14 */}
+            <WideWeekCard
+              weekNumber={14}
+              title="Tenggat Proyek Akhir Semester"
+              collisionCount={week14Metric?.collisionCount || 3}
+              loadIndex={week14Metric?.loadIndex || 14}
+              courses={week14Metric?.courses || ["IF2110", "IF2120", "IF2160"]}
+              recommendation="Optimal: geser Proyek AI ke Pekan 15 agar Cw turun ke 2"
+              palette="pasir"
+              illustrationType="notebook"
+            />
           </div>
         )}
       </section>
 
-      {/* 16-Week Academic Schedule */}
-      <section className="space-y-4">
+      {/* 3. Seksi Semua Pekan */}
+      <section className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-              All Academic Weeks
-            </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-              16 Weeks
+            <h3 className="text-base font-semibold text-cw-ink">
+              Semua Pekan
+            </h3>
+            <span className="text-xs text-cw-faint">
+              (Semester Ganjil 2026/2027)
             </span>
           </div>
-
-          <span className="text-xs text-slate-500">
-            {data?.program.name || "Informatics Engineering (IF-ITB)"}
-          </span>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white border border-[#E9ECF2] rounded-2xl overflow-hidden animate-pulse">
-                <div className="h-32 bg-slate-100" />
-                <div className="p-4 space-y-2">
-                  <div className="h-3 bg-slate-100 rounded-full w-2/3" />
-                  <div className="h-3 bg-slate-100 rounded-full w-full" />
-                  <div className="h-2 bg-slate-100 rounded-full w-1/2" />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <CardSkeleton key={i} />
             ))}
           </div>
         ) : (

@@ -3,97 +3,84 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRole } from "@/context/RoleContext";
-import {
-  Search,
-  Zap,
-  Plus,
-  Bell,
-  Upload,
-  MessageSquare,
-} from "lucide-react";
+import { Plus, Upload, Menu } from "lucide-react";
+import { Button } from "./ui/Button";
 
 interface AppHeaderProps {
   onOpenContentModal: () => void;
   onOpenSolverModal: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-export function AppHeader({ onOpenContentModal, onOpenSolverModal }: AppHeaderProps) {
+export function AppHeader({
+  onOpenContentModal,
+  onToggleMobileMenu,
+}: AppHeaderProps) {
   const pathname = usePathname();
-  const { currentUser, role } = useRole();
 
   const navTabs = [
-    { href: "/", label: "Heat Map" },
-    { href: "/weeks/8", label: "Week Inspector" },
-    { href: "/help", label: "Peer Help" },
-    { href: "/analytics", label: "Analytics" },
-    { href: "/import", label: "Import" },
-    { href: "/about", label: "About" },
+    { href: "/", label: "Dasbor" },
+    { href: "/weeks/8", label: "Pekan" },
+    { href: "/help", label: "Bantuan" },
+    { href: "/analytics", label: "Analitik" },
+    { href: "/import", label: "Impor" },
+    { href: "/about", label: "Tentang" },
   ];
 
   return (
-    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#E9ECF2]">
-      {/* Main Header Bar — max 72px height */}
-      <div className="px-6 py-3 flex items-center justify-between gap-4">
-        {/* Left: Solve Collisions pill + Search */}
-        <div className="flex items-center gap-3 flex-1 max-w-md">
+    <header className="sticky top-0 z-20 bg-cw-surface/95 backdrop-blur border-b border-cw-line">
+      {/* Baris 1: Brand & Aksi Utama (64px) */}
+      <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          {/* Mobile hamburger button */}
           <button
-            onClick={onOpenSolverModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EEF0FD] text-[#5850EC] hover:bg-[#E0E3FC] text-xs font-bold transition-colors active:scale-[0.98] flex-shrink-0"
+            onClick={onToggleMobileMenu}
+            type="button"
+            aria-label="Buka menu navigasi"
+            className="lg:hidden p-2 rounded-xl text-cw-muted hover:text-cw-ink hover:bg-cw-sunken"
           >
-            <Zap className="w-3.5 h-3.5" strokeWidth={2} />
-            <span>Solve Collisions</span>
+            <Menu className="w-5 h-5" strokeWidth={1.75} />
           </button>
 
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" strokeWidth={1.5} />
-            <input
-              type="text"
-              placeholder="Search assignments, sub-topics..."
-              className="w-full text-xs rounded-xl bg-[#F8F9FB] border border-[#E9ECF2] pl-8 pr-3 py-2 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#5850EC]/30 focus:border-[#5850EC] transition-all"
-            />
+          {/* Program Header */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-cw-accent-soft text-cw-accent flex items-center justify-center font-bold text-xs flex-shrink-0">
+              TI
+            </div>
+            <div>
+              <h1 className="text-[15px] font-semibold text-cw-ink leading-tight">
+                Collision Week
+              </h1>
+              <p className="text-xs text-cw-faint leading-tight">
+                Teknik Informatika · ITB
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Right: Action buttons */}
-        <div className="flex items-center gap-2">
-          <Link
-            href="/help"
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors active:scale-[0.98]"
-            title="Peer Help Board"
-          >
-            <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
+        {/* Right Actions */}
+        <div className="flex items-center gap-2.5">
+          <Link href="/import">
+            <Button variant="outline" size="sm" type="button">
+              <Upload className="w-4 h-4" strokeWidth={1.75} />
+              <span className="hidden sm:inline">Unggah CSV</span>
+            </Button>
           </Link>
 
-          <button
-            onClick={onOpenSolverModal}
-            className="relative p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors active:scale-[0.98]"
-            title="Flagged weeks"
-          >
-            <Bell className="w-4 h-4" strokeWidth={1.5} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
-          </button>
-
-          <Link
-            href="/import"
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors active:scale-[0.98]"
-          >
-            <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
-            <span>Upload</span>
-          </Link>
-
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={onOpenContentModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#5850EC] hover:bg-[#4B41DE] text-white text-xs font-bold shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
+            type="button"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
-            <span>New Action</span>
-          </button>
+            <span>Buat Baru</span>
+          </Button>
         </div>
       </div>
 
-      {/* Navigation Tabs Bar — single line, truncated labels */}
-      <div className="px-6 flex items-center gap-5 text-xs font-semibold border-t border-[#F1F3F8] overflow-x-auto">
+      {/* Baris 2: Tab Navigasi Halaman (44px) */}
+      <div className="h-11 px-4 sm:px-6 flex items-center gap-6 text-[13px] border-t border-cw-line overflow-x-auto scrollbar-none">
         {navTabs.map((tab) => {
           const isActive =
             tab.href === "/"
@@ -104,10 +91,10 @@ export function AppHeader({ onOpenContentModal, onOpenSolverModal }: AppHeaderPr
             <Link
               key={tab.href}
               href={tab.href}
-              className={`py-2.5 border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
+              className={`h-full flex items-center border-b-2 transition-colors whitespace-nowrap flex-shrink-0 px-0.5 ${
                 isActive
-                  ? "border-[#5850EC] text-[#5850EC] font-bold"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
+                  ? "border-cw-accent text-cw-ink font-semibold"
+                  : "border-transparent text-cw-muted hover:text-cw-ink"
               }`}
             >
               {tab.label}

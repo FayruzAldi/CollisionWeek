@@ -4,25 +4,21 @@ import React, { useEffect, useState } from "react";
 import { HelpRequestData } from "@/lib/types";
 import { HelpResponseDrawer } from "@/components/HelpResponseDrawer";
 import { HelpRequestModal } from "@/components/HelpRequestModal";
-import { PastelIllustration } from "@/components/PastelIllustrations";
-import { CircularProgressRing } from "@/components/CircularProgressRing";
+import { PastelIllustration, PALETTE_LIST, IllustrationType } from "@/components/PastelIllustrations";
 import { formatDateTime } from "@/lib/utils";
+import { Tag } from "@/components/ui/Tag";
+import { Badge } from "@/components/ui/Badge";
+import { Pill } from "@/components/ui/Pill";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 import {
-  Users,
-  HelpCircle,
   Search,
-  Filter,
-  Clock,
-  MessageSquare,
-  CheckCircle2,
-  AlertCircle,
   Plus,
-  Sparkles,
-  Tag,
+  MessageSquare,
   ArrowRight,
-  ShieldCheck,
-  LayoutGrid,
-  List,
+  HelpCircle,
 } from "lucide-react";
 
 export default function PeerHelpBoardPage() {
@@ -47,6 +43,7 @@ export default function PeerHelpBoardPage() {
   const [selectedRequest, setSelectedRequest] = useState<HelpRequestData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [assignmentOptions, setAssignmentOptions] = useState<any[]>([]);
+  const { showToast } = useToast();
 
   const fetchHelpRequests = async () => {
     try {
@@ -63,7 +60,7 @@ export default function PeerHelpBoardPage() {
         if (data.stats) setStats(data.stats);
       }
     } catch (err) {
-      console.error("Failed to load help requests:", err);
+      console.error("Gagal memuat bantuan sebaya:", err);
     } finally {
       setLoading(false);
     }
@@ -83,7 +80,7 @@ export default function PeerHelpBoardPage() {
         setAssignmentOptions(wData.assignments || []);
       }
     } catch (err) {
-      console.error("Error fetching auxiliary data:", err);
+      console.error("Gagal memuat data pendukung:", err);
     }
   };
 
@@ -95,138 +92,100 @@ export default function PeerHelpBoardPage() {
     fetchHelpRequests();
   }, [selectedCourse, activeFilter]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchHelpRequests();
-  };
+  const illTypes: IllustrationType[] = ["laptop", "notebook", "analytics", "document"];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-      {/* Top Banner & Action Bar (Matching Image 2 Header) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Header Halaman */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-cw-line">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Sub-topic Peer Help Board
-            </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EEF0FD] text-[#5850EC]">
-              {stats.total} Questions Active
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-semibold tracking-tight text-cw-ink">
+              Bantuan Sebaya
+            </h2>
+            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-cw-sunken text-cw-muted">
+              {stats.total} pertanyaan
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Class-wide peer unblocking across specific assignment sub-topics (Written, Short Video, or 20-min micro-session)
+          <p className="text-xs text-cw-muted mt-0.5">
+            Bantuan dari teman sekelas untuk sub-topik tertentu, lewat tulisan, rekaman, atau sesi 20 menit.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#5850EC] hover:bg-[#4B41DE] text-white text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Ask for Peer Help</span>
-          </button>
-        </div>
+        <Button variant="primary" size="sm" onClick={() => setIsModalOpen(true)}>
+          <Plus className="w-4 h-4" strokeWidth={2} />
+          <span>Minta bantuan</span>
+        </Button>
       </div>
 
-      {/* Filter Pills & KPI stats (Image 1 & 2 style) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setActiveFilter("all")}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeFilter === "all"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-            }`}
-          >
-            All Questions ({stats.total})
-          </button>
-          <button
-            onClick={() => setActiveFilter("needs_help")}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-              activeFilter === "needs_help"
-                ? "bg-rose-600 text-white shadow-xs"
-                : "bg-white text-rose-600 hover:bg-rose-50 border border-rose-200"
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-            Needs Peer Help (&gt;12h) ({stats.needsHelpUrgent})
-          </button>
-          <button
-            onClick={() => setActiveFilter("in_progress")}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeFilter === "in_progress"
-                ? "bg-amber-500 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-amber-50 border border-slate-200"
-            }`}
-          >
-            In Discussion ({stats.inProgress})
-          </button>
-          <button
-            onClick={() => setActiveFilter("resolved")}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeFilter === "resolved"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-emerald-50 border border-slate-200"
-            }`}
-          >
-            Resolved ({stats.resolved})
-          </button>
+      {/* Toolbar Filter */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <Pill active={activeFilter === "all"} onClick={() => setActiveFilter("all")}>
+            Semua ({stats.total})
+          </Pill>
+          <Pill active={activeFilter === "needs_help"} onClick={() => setActiveFilter("needs_help")}>
+            Butuh bantuan (&gt;12 jam) ({stats.needsHelpUrgent})
+          </Pill>
+          <Pill active={activeFilter === "in_progress"} onClick={() => setActiveFilter("in_progress")}>
+            Sedang dibahas ({stats.inProgress})
+          </Pill>
+          <Pill active={activeFilter === "resolved"} onClick={() => setActiveFilter("resolved")}>
+            Selesai ({stats.resolved})
+          </Pill>
         </div>
 
-        {/* Right Search & Course Filter */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+        {/* Cari & Filter Matkul */}
+        <div className="flex items-center gap-2.5 self-end md:self-auto">
+          <div className="relative w-44 sm:w-56">
+            <Search className="w-3.5 h-3.5 text-cw-faint absolute left-3 top-2.5" strokeWidth={1.75} />
             <input
               type="text"
-              placeholder="Search #subtopic..."
+              placeholder="Cari sub-topik"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-xs rounded-xl bg-white border border-[#E9ECF2] pl-8 pr-3 py-1.5 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#5850EC]/30"
+              onKeyDown={(e) => e.key === "Enter" && fetchHelpRequests()}
+              className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line pl-8 pr-3 py-1.5 text-cw-ink placeholder-cw-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
             />
           </div>
 
           <select
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
-            className="text-xs rounded-xl bg-white border border-[#E9ECF2] px-3 py-1.5 text-slate-800 focus:outline-hidden"
+            aria-label="Pilih matkul"
+            className="text-xs rounded-xl bg-cw-surface border border-cw-line px-2.5 py-1.5 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
           >
-            <option value="all">All Courses</option>
+            <option value="all">Semua matkul</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.courseCode} — {c.courseName}
+                {c.courseCode} · {c.courseName}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Cards Grid */}
+      {/* Grid Kartu Bantuan */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="bg-white border border-[#E9ECF2] rounded-2xl overflow-hidden animate-pulse">
-              <div className="h-28 bg-slate-100" />
-              <div className="p-4 space-y-2">
-                <div className="h-3 bg-slate-100 rounded-full w-1/3" />
-                <div className="h-4 bg-slate-100 rounded-full w-full" />
-                <div className="h-3 bg-slate-100 rounded-full w-3/4" />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
           ))}
         </div>
       ) : requests.length === 0 ? (
-        <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
-          <HelpCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-          <p className="text-sm font-bold text-slate-700">No help requests found matching filter.</p>
-          <p className="text-xs text-slate-400 mt-1">Be the first to ask a question on your assignments!</p>
-        </div>
+        <EmptyState
+          icon={HelpCircle}
+          title="Belum ada permintaan pada filter ini"
+          description="Jadilah yang pertama bertanya tentang tugas yang sedang kamu kerjakan."
+          actionLabel="Minta bantuan sekarang"
+          onAction={() => setIsModalOpen(true)}
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {requests.map((r, i) => {
             const isResolved = r.status === "RESOLVED";
+            const illType = illTypes[i % illTypes.length];
+            const palette = PALETTE_LIST[i % PALETTE_LIST.length];
 
             return (
               <div
@@ -235,78 +194,88 @@ export default function PeerHelpBoardPage() {
                   setSelectedRequest(r);
                   setIsDrawerOpen(true);
                 }}
-                className="trenning-card group overflow-hidden flex flex-col justify-between cursor-pointer"
+                className="cw-card group overflow-hidden flex flex-col justify-between cursor-pointer"
               >
                 <div>
-                  {/* Card Thumbnail Header (Image 2 style) */}
-                  <div className="h-28 w-full relative overflow-hidden border-b border-slate-100">
-                    <PastelIllustration type={i % 2 === 0 ? "laptop" : "notebook"} />
+                  {/* Banner Ilustrasi */}
+                  <div className="h-28 w-full relative overflow-hidden rounded-t-2xl">
+                    <PastelIllustration type={illType} palette={palette} />
 
-                    <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-slate-900/80 text-white text-[10px] font-bold">
-                      {r.assignment.course.courseCode}
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className="bg-cw-ink/80 text-white text-[11px] font-medium px-2 py-0.5 rounded-md backdrop-blur-sm">
+                        {r.assignment.course.courseCode}
+                      </span>
                     </div>
 
-                    {r.isUrgent && (
-                      <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider animate-pulse">
-                        Needs Help (&gt;12h)
+                    {r.isUrgent && !isResolved && (
+                      <div className="absolute top-2.5 right-2.5">
+                        <Badge variant="danger" shape="pill">
+                          Butuh bantuan (&gt;12 jam)
+                        </Badge>
                       </div>
                     )}
                   </div>
 
-                  {/* Body */}
-                  <div className="p-4 space-y-2.5">
+                  {/* Badan Kartu */}
+                  <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-                        #{r.subtopicLabel}
-                      </span>
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      <Tag>#{r.subtopicLabel}</Tag>
+                      <Badge
+                        variant={
                           isResolved
-                            ? "bg-emerald-100 text-emerald-800"
+                            ? "success"
                             : r.status === "IN_PROGRESS"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}
+                            ? "warning"
+                            : "neutral"
+                        }
+                        shape="pill"
                       >
-                        {isResolved ? "Resolved" : r.status === "IN_PROGRESS" ? "In Progress" : "Open"}
-                      </span>
+                        {isResolved
+                          ? "Selesai"
+                          : r.status === "IN_PROGRESS"
+                          ? "Sedang dibahas"
+                          : "Terbuka"}
+                      </Badge>
                     </div>
 
-                    <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-1 group-hover:text-[#5850EC] transition-colors">
+                    <h3 className="font-semibold text-cw-ink text-[15px] leading-snug line-clamp-1 group-hover:text-cw-accent transition-colors">
                       {r.assignment.title}
-                    </h4>
+                    </h3>
 
-                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-cw-muted line-clamp-2 leading-relaxed">
                       {r.questionDetail}
                     </p>
 
-                    {/* Circular Rings (Image 2 accuracy & completion rate style) */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-[#5850EC] flex items-center justify-center font-bold text-[10px]">
+                    {/* Baris Meta */}
+                    <div className="pt-2 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-cw-accent-soft text-cw-accent flex items-center justify-center font-semibold text-[11px] flex-shrink-0">
                           {r.requester.name.charAt(0)}
                         </div>
-                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[110px]">
+                        <span className="text-xs text-cw-muted font-medium truncate max-w-[130px]">
                           {r.requester.name}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1 text-xs font-bold text-[#5850EC]">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>{r.responsesCount || r.responses?.length || 0} response(s)</span>
+                      <div className="flex items-center gap-1 text-xs text-cw-muted font-medium">
+                        <MessageSquare className="w-3.5 h-3.5 text-cw-faint" strokeWidth={1.75} />
+                        <span>{r.responsesCount || r.responses?.length || 0} tanggapan</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Card Footer */}
-                <div className="pt-3 pb-4 px-4 border-t border-[#F1F3F8] flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-slate-400">
+                {/* Footer Kartu */}
+                <div className="p-3.5 px-4 cw-hairline flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-cw-faint">
                     {formatDateTime(r.createdAt)}
                   </span>
-                  <button className="font-semibold text-[#5850EC] hover:text-[#4B41DE] flex items-center gap-1 active:scale-[0.98] transition-transform">
-                    <span>View Thread</span>
-                    <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                  <button
+                    type="button"
+                    className="font-semibold text-cw-accent hover:underline flex items-center gap-1"
+                  >
+                    <span>Buka</span>
+                    <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.75} />
                   </button>
                 </div>
               </div>
@@ -315,7 +284,7 @@ export default function PeerHelpBoardPage() {
         </div>
       )}
 
-      {/* Slide-over Response Drawer */}
+      {/* Drawer Respons */}
       <HelpResponseDrawer
         request={selectedRequest}
         isOpen={isDrawerOpen}
@@ -341,17 +310,19 @@ export default function PeerHelpBoardPage() {
                     },
                   });
                 }
-              });
+              })
+              .catch(console.error);
           }
         }}
       />
 
-      {/* New Help Request Modal */}
+      {/* Modal Permintaan Bantuan Baru */}
       <HelpRequestModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           fetchHelpRequests();
+          showToast("Permintaan bantuan berhasil diajukan!", "success");
         }}
         assignments={assignmentOptions}
       />

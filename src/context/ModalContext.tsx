@@ -58,7 +58,6 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         isOpen={helpModalOpen}
         onClose={() => setHelpModalOpen(false)}
         onSuccess={() => {
-          alert("Help request posted with whole-class visibility!");
           window.location.reload();
         }}
         assignments={assignmentOptions}
