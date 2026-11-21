@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { CircularProgressRing } from "@/components/CircularProgressRing";
 import {
   BarChart3,
   TrendingUp,
@@ -78,118 +79,107 @@ export default function LecturerAnalyticsPage() {
   const maxRequests = Math.max(...(data?.rankings.map((r) => r.totalRequests) || [1]), 1);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="max-w-3xl space-y-3 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-xs font-semibold">
-            <BarChart3 className="w-3.5 h-3.5 text-indigo-300" />
-            Lecturer Insights &amp; Course Evaluation Dashboard (US-08)
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              Academic Sub-topic Friction Analytics
+            </h1>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EEF0FD] text-[#5850EC]">
+              Lecturer Insights (US-08)
+            </span>
           </div>
-
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-            Academic Sub-topic Bottlenecks
-          </h1>
-
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-            Provides lecturers with actionable quantitative visibility into which sub-topics
-            trigger the highest density of student help inquiries. Evaluates syllabus friction
-            points to guide review sessions or deadline pacing.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Evaluates which assignment sub-topics cause the highest friction to guide review sessions and deadline pacing
           </p>
+        </div>
 
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-200 border border-amber-400/30 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Final Day Milestone #3: Export RPS Revision Plan</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            Final Day Milestone #3: Export RPS Report
+          </span>
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Image 1 style) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Total Sub-topic Inquiries
+        <div className="trenning-card p-4.5 space-y-1">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Total Sub-topic Questions
           </p>
-          <p className="text-2xl font-black text-slate-800 mt-1">
+          <p className="text-2xl font-black text-slate-900">
             {data?.summary.totalRequests ?? 0}
           </p>
-          <span className="text-[11px] text-slate-500">Student questions tracked</span>
+          <span className="text-[11px] text-slate-500">Tracked across 6 courses</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Overall Resolution Rate
+        <div className="trenning-card p-4.5 space-y-1">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Resolution Rate
           </p>
-          <p className="text-2xl font-black text-emerald-600 mt-1">
+          <p className="text-2xl font-black text-emerald-600">
             {data?.summary.overallResolutionRate ?? 0}%
           </p>
-          <span className="text-[11px] text-emerald-600 font-medium">
+          <span className="text-[11px] text-emerald-600 font-semibold">
             {data?.summary.resolvedTotal ?? 0} resolved by peers
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="trenning-card p-4.5 space-y-1">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             Avg Time to First Response
           </p>
-          <p className="text-2xl font-black text-sky-600 mt-1">
+          <p className="text-2xl font-black text-[#5850EC]">
             {data?.summary.overallAvgFirstResponseHours ?? 0} hours
           </p>
           <span className="text-[11px] text-slate-500">Target SLA: &lt; 24h</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            High-Friction Bottlenecks
+        <div className="trenning-card p-4.5 space-y-1">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            High Friction Topics
           </p>
-          <p className="text-2xl font-black text-rose-600 mt-1">
-            {data?.summary.criticalSubtopicsCount ?? 0} Sub-topics
+          <p className="text-2xl font-black text-rose-600">
+            {data?.summary.criticalSubtopicsCount ?? 0} Topics
           </p>
-          <span className="text-[11px] text-rose-600 font-medium">
-            Require lecturer intervention
+          <span className="text-[11px] text-rose-600 font-semibold">
+            Pedagogical review recommended
           </span>
         </div>
       </div>
 
-      {/* Subtopics Rankings Table & Visual Bars */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+      {/* Subtopic Density Ranking List */}
+      <div className="trenning-card p-6 space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="font-bold text-slate-900 text-lg tracking-tight">
+            <h3 className="font-extrabold text-slate-900 text-base">
               Sub-topic Inquiry Density Ranking
             </h3>
             <p className="text-xs text-slate-500">
-              Sorted by volume of student inquiries. Highlighted in red if resolution &lt; 60%.
+              Ranked by student question volume. Topics with resolution &lt; 60% are highlighted for faculty intervention.
             </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Class Visibility: Active</span>
           </div>
         </div>
 
         {loading ? (
-          <div className="py-20 text-center text-slate-400">
-            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p className="text-sm font-semibold">Aggregating Sub-topic Analytics...</p>
-          </div>
-        ) : data?.rankings.length === 0 ? (
-          <div className="py-12 text-center text-slate-400">
-            <p className="text-sm font-medium">No sub-topic inquiry data available yet.</p>
+          <div className="py-16 text-center text-slate-400">
+            <div className="w-8 h-8 border-2 border-[#5850EC] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <p className="text-xs font-bold">Aggregating Sub-topic Analytics...</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             {data?.rankings.map((stat, idx) => {
               const isCritical = stat.severity === "CRITICAL";
               const isWarning = stat.severity === "WARNING";
-              const barWidth = Math.max(12, Math.round((stat.totalRequests / maxRequests) * 100));
+              const barWidth = Math.max(15, Math.round((stat.totalRequests / maxRequests) * 100));
 
               return (
                 <div
                   key={`${stat.courseCode}-${stat.subtopic}`}
-                  className={`p-4.5 rounded-xl border transition-all ${
+                  className={`p-4 rounded-2xl border transition-all ${
                     isCritical
                       ? "border-rose-200 bg-rose-50/40"
                       : isWarning
@@ -198,19 +188,16 @@ export default function LecturerAnalyticsPage() {
                   }`}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {/* Left: Info */}
                     <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400">
-                          #{idx + 1}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-400">#{idx + 1}</span>
                         <span
-                          className="text-[11px] font-bold px-2 py-0.5 rounded text-white"
-                          style={{ backgroundColor: stat.courseColor || "#2563eb" }}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded text-white"
+                          style={{ backgroundColor: stat.courseColor || "#2563EB" }}
                         >
                           {stat.courseCode}
                         </span>
-                        <h4 className="font-bold text-slate-900 text-sm">
+                        <h4 className="font-extrabold text-slate-900 text-sm">
                           {stat.subtopic}
                         </h4>
                         {isCritical && (
@@ -222,56 +209,36 @@ export default function LecturerAnalyticsPage() {
                       </div>
 
                       {/* Bar indicator */}
-                      <div className="space-y-1">
-                        <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isCritical
-                                ? "bg-rose-600"
-                                : isWarning
-                                ? "bg-amber-500"
-                                : "bg-sky-500"
-                            }`}
-                            style={{ width: `${barWidth}%` }}
-                          ></div>
-                        </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isCritical ? "bg-rose-600" : isWarning ? "bg-amber-500" : "bg-[#5850EC]"
+                          }`}
+                          style={{ width: `${barWidth}%` }}
+                        ></div>
                       </div>
 
-                      {/* Recommendation Box */}
-                      <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 leading-relaxed">
-                        <strong className="text-slate-900">Pedagogical Recommendation: </strong>
+                      {/* Recommendation text */}
+                      <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                        <strong className="text-slate-900 font-bold">Pedagogical Recommendation: </strong>
                         {stat.recommendation}
                       </div>
                     </div>
 
-                    {/* Right: Stats Summary */}
-                    <div className="flex items-center gap-4 text-xs self-start lg:self-auto bg-white p-3 rounded-xl border border-slate-100 shadow-2xs">
-                      <div className="text-center">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                          Requests
-                        </span>
-                        <span className="text-lg font-black text-slate-800">
-                          {stat.totalRequests}
-                        </span>
+                    {/* Stats ring / boxes */}
+                    <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-2xs self-start lg:self-auto">
+                      <div className="text-center px-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Inquiries</span>
+                        <span className="text-lg font-black text-slate-900">{stat.totalRequests}</span>
                       </div>
-                      <div className="w-px h-8 bg-slate-200"></div>
-                      <div className="text-center">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                          Resolved
-                        </span>
-                        <span className="text-lg font-black text-emerald-600">
-                          {stat.resolutionRate}%
-                        </span>
-                      </div>
-                      <div className="w-px h-8 bg-slate-200"></div>
-                      <div className="text-center">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                          Avg Response
-                        </span>
-                        <span className="text-lg font-black text-sky-600">
-                          {stat.avgResponseTimeHours !== null ? `${stat.avgResponseTimeHours}h` : "-"}
-                        </span>
-                      </div>
+                      <div className="w-px h-8 bg-slate-100"></div>
+                      <CircularProgressRing
+                        value={stat.resolutionRate}
+                        size={36}
+                        strokeWidth={4}
+                        color={stat.resolutionRate >= 60 ? "#10B981" : "#EF4444"}
+                        label="Resolved"
+                      />
                     </div>
                   </div>
                 </div>
@@ -279,29 +246,6 @@ export default function LecturerAnalyticsPage() {
             })}
           </div>
         )}
-      </section>
-
-      {/* Planned Final Day Milestone #3 Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white border border-slate-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-400/30">
-            Final Day Milestone #3
-          </span>
-          <h4 className="font-bold text-white text-base mt-1">
-            Automated RPS Revision &amp; Academic Workload PDF Report
-          </h4>
-          <p className="text-xs text-slate-300 mt-0.5 max-w-xl">
-            Reserved for Final Day live build: automatically synthesizes semester-end sub-topic friction data into accredited curriculum review reports for faculty departments.
-          </p>
-        </div>
-
-        <button
-          disabled
-          className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-400 border border-slate-700 text-xs font-semibold flex items-center gap-2 cursor-not-allowed opacity-80 self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4" />
-          <span>Planned for Final Day</span>
-        </button>
       </div>
     </div>
   );

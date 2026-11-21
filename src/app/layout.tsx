@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { RoleProvider } from "@/context/RoleContext";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import { ModalProvider } from "@/context/ModalContext";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Collision Week | Deadline Load Balancing & Sub-topic Peer Help",
+  title: "Collision Week | Academic Load Balancing & Sub-topic Peer Help",
   description:
     "Deterministic academic load balancing and sub-topic peer assistance for university programs. Built for GDGoC ITB STACK 2026.",
 };
@@ -17,13 +17,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased bg-slate-50 text-slate-900">
+      <body className="antialiased bg-[#F8F9FB] text-slate-900">
         <RoleProvider>
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <ModalProvider>
+            <AppShell>{children}</AppShell>
+          </ModalProvider>
         </RoleProvider>
       </body>
     </html>

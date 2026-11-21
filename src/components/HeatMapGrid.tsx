@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { PastelIllustration } from "@/components/PastelIllustrations";
+import { CircularProgressRing } from "@/components/CircularProgressRing";
 import {
   AlertOctagon,
   AlertTriangle,
@@ -9,8 +11,13 @@ import {
   Calendar,
   Layers,
   ArrowRight,
-  TrendingUp,
+  Search,
+  Filter,
   SlidersHorizontal,
+  LayoutGrid,
+  List,
+  Sparkles,
+  ChevronDown,
 } from "lucide-react";
 
 interface WeeklyMetricItem {
@@ -32,223 +39,325 @@ interface WeeklyMetricItem {
 
 interface HeatMapGridProps {
   metrics: WeeklyMetricItem[];
-  onSelectWeek?: (weekNumber: number) => void;
-  selectedWeek?: number | null;
+  onOpenSolverModal?: () => void;
 }
 
-export function HeatMapGrid({
-  metrics,
-  onSelectWeek,
-  selectedWeek,
-}: HeatMapGridProps) {
+export function HeatMapGrid({ metrics, onOpenSolverModal }: HeatMapGridProps) {
   const [filter, setFilter] = useState<"ALL" | "FLAGGED" | "CAUTION" | "SAFE">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const filteredMetrics = metrics.filter((m) => {
     if (filter === "FLAGGED") return m.collisionCount >= 3;
     if (filter === "CAUTION") return m.collisionCount === 2;
     if (filter === "SAFE") return m.collisionCount <= 1;
     return true;
+  }).filter((m) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      `week ${m.weekNumber}`.includes(q) ||
+      m.courses.some((c) => c.toLowerCase().includes(q))
+    );
   });
 
-  // Calculate highest load index for relative bar height
   const maxLoad = Math.max(...metrics.map((m) => m.loadIndex), 1);
+
+  const getIllustrationType = (weekNumber: number) => {
+    if (weekNumber === 8) return "laptop";
+    if (weekNumber === 14) return "notebook";
+    if (weekNumber === 6 || weekNumber === 10) return "analytics";
+    if (weekNumber === 16) return "document";
+    const types: ("laptop" | "document" | "notebook" | "analytics" | "palette" | "collaboration")[] = [
+      "laptop",
+      "notebook",
+      "analytics",
+      "palette",
+      "document",
+      "collaboration",
+    ];
+    return types[weekNumber % types.length];
+  };
 
   return (
     <div className="space-y-6">
-      {/* Legend & Filter Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-            Deterministic Load Legend:
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-            <span className="text-slate-600">
-              Safe Zone (<strong className="text-emerald-700">C<sub>w</sub> ≤ 1</strong>)
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-            <span className="text-slate-600">
-              Caution Zone (<strong className="text-amber-700">C<sub>w</sub> = 2</strong>)
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-rose-600 animate-pulse"></span>
-            <span className="text-slate-600">
-              Collision Zone (<strong className="text-rose-700">C<sub>w</sub> ≥ 3</strong>)
-            </span>
-          </div>
+      {/* Filter and Control Bar (Matching Image 1 & 2) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Status Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            onClick={() => setFilter("ALL")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              filter === "ALL"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            All Status ({metrics.length})
+          </button>
+          <button
+            onClick={() => setFilter("FLAGGED")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              filter === "FLAGGED"
+                ? "bg-rose-600 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-rose-50 border border-slate-200"
+            }`}
+          >
+            Collision Weeks (≥3)
+          </button>
+          <button
+            onClick={() => setFilter("CAUTION")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              filter === "CAUTION"
+                ? "bg-amber-500 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-amber-50 border border-slate-200"
+            }`}
+          >
+            Caution (2)
+          </button>
+          <button
+            onClick={() => setFilter("SAFE")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              filter === "SAFE"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-emerald-50 border border-slate-200"
+            }`}
+          >
+            Safe (≤1)
+          </button>
         </div>
 
-        {/* Filter buttons */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs self-start sm:self-auto">
-          {(["ALL", "FLAGGED", "CAUTION", "SAFE"] as const).map((mode) => (
+        {/* Right Search & View Toggles */}
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder="Search weeks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="text-xs rounded-xl bg-white border border-[#E9ECF2] pl-8 pr-3 py-1.5 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#5850EC]/30"
+            />
+          </div>
+
+          <div className="flex items-center bg-white border border-[#E9ECF2] rounded-xl p-0.5">
             <button
-              key={mode}
-              onClick={() => setFilter(mode)}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
-                filter === mode
-                  ? "bg-white text-slate-900 shadow-xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === "grid" ? "bg-[#EEF0FD] text-[#5850EC]" : "text-slate-400 hover:text-slate-700"
               }`}
+              title="Grid View"
             >
-              {mode === "ALL"
-                ? "All 16 Weeks"
-                : mode === "FLAGGED"
-                ? "Collisions Only (≥3)"
-                : mode === "CAUTION"
-                ? "Caution (2)"
-                : "Safe (≤1)"}
+              <LayoutGrid className="w-4 h-4" />
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === "list" ? "bg-[#EEF0FD] text-[#5850EC]" : "text-slate-400 hover:text-slate-700"
+              }`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 16-Week Interactive Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-        {filteredMetrics.map((item) => {
-          const isCollision = item.collisionCount >= 3;
-          const isCaution = item.collisionCount === 2;
-          const isSafe = item.collisionCount <= 1;
-          const isSelected = selectedWeek === item.weekNumber;
+      {/* Grid of 16 Cards (Styled identical to Image 1 & Image 2) */}
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredMetrics.map((item) => {
+            const isCollision = item.collisionCount >= 3;
+            const isCaution = item.collisionCount === 2;
+            const loadPercent = Math.min(100, Math.round((item.loadIndex / maxLoad) * 100));
 
-          // Theme styling based on deterministic collision rules
-          const borderStyle = isCollision
-            ? "border-rose-400 bg-gradient-to-b from-rose-50/70 to-white hover:border-rose-500 shadow-rose-100"
-            : isCaution
-            ? "border-amber-300 bg-gradient-to-b from-amber-50/40 to-white hover:border-amber-400 shadow-amber-50"
-            : "border-slate-200 bg-white hover:border-emerald-300 shadow-slate-50";
+            return (
+              <div
+                key={item.weekNumber}
+                className="trenning-card group overflow-hidden flex flex-col justify-between"
+              >
+                <div>
+                  {/* Card Thumbnail Banner with Illustration (Image 1 style) */}
+                  <div className="h-32 w-full relative overflow-hidden border-b border-slate-100">
+                    <PastelIllustration type={getIllustrationType(item.weekNumber)} />
 
-          const badgeBg = isCollision
-            ? "bg-rose-600 text-white shadow-xs"
-            : isCaution
-            ? "bg-amber-100 text-amber-800 border border-amber-200"
-            : "bg-emerald-100 text-emerald-800 border border-emerald-200";
+                    {/* Top-left pill badge */}
+                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
+                      <span>Week {item.weekNumber}</span>
+                      <span>•</span>
+                      <span>{item.totalAssignments} Tasks</span>
+                    </div>
 
-          const loadPercent = Math.min(100, Math.round((item.loadIndex / maxLoad) * 100));
+                    {/* Top-right collision alert badge if flagged */}
+                    {isCollision && (
+                      <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs animate-pulse">
+                        <AlertOctagon className="w-3 h-3" />
+                        <span>C={item.collisionCount}</span>
+                      </div>
+                    )}
+                    {isCaution && (
+                      <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-bold">
+                        C=2
+                      </div>
+                    )}
+                  </div>
 
-          return (
+                  {/* Card Body */}
+                  <div className="p-4 space-y-3">
+                    {/* Category / Type row */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wide flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {item.weekNumber === 8
+                          ? "Midterm Week"
+                          : item.weekNumber === 16
+                          ? "Final Exam Week"
+                          : `Academic Week ${item.weekNumber}`}
+                      </span>
+
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          isCollision
+                            ? "bg-rose-100 text-rose-700"
+                            : isCaution
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {isCollision ? "Collision Crunch" : isCaution ? "Moderate" : "Safe Load"}
+                      </span>
+                    </div>
+
+                    {/* Week Title */}
+                    <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-1 group-hover:text-[#5850EC] transition-colors">
+                      {item.weekNumber === 8
+                        ? "Midterm Project & Assessment Crunch"
+                        : item.weekNumber === 14
+                        ? "Pre-Final Project Milestones"
+                        : `Semester Week ${item.weekNumber} Academic Schedule`}
+                    </h4>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-1">
+                      {item.courses.slice(0, 3).map((c) => (
+                        <span
+                          key={c}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#F4F5F8] text-slate-600"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                      {item.courses.length > 3 && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">
+                          +{item.courses.length - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Circular / Ring Progress Gauge (Image 2 style) */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <CircularProgressRing
+                        value={loadPercent}
+                        size={34}
+                        strokeWidth={3.5}
+                        color={isCollision ? "#EF4444" : isCaution ? "#F59E0B" : "#10B981"}
+                        label={`${item.loadIndex} pts`}
+                        sublabel="Load Index"
+                      />
+
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block font-medium">Major Tasks</span>
+                        <span className={`text-xs font-black ${isCollision ? "text-rose-600" : "text-slate-700"}`}>
+                          {item.majorAssignmentsCount} Course{item.majorAssignmentsCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Footer Button */}
+                <div className="p-3 px-4 bg-[#FAFBFD] border-t border-[#F1F3F8] flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {isCollision ? "High clustering" : "Balanced load"}
+                  </span>
+
+                  <Link
+                    href={`/weeks/${item.weekNumber}`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                      isCollision
+                        ? "bg-[#5850EC] text-white hover:bg-[#4B41DE] shadow-xs"
+                        : "bg-white border border-[#E9ECF2] text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{isCollision ? "Solve Moves" : "View"}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* List View Mode */
+        <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 shadow-xs overflow-hidden">
+          {filteredMetrics.map((item) => (
             <div
               key={item.weekNumber}
-              onClick={() => onSelectWeek && onSelectWeek(item.weekNumber)}
-              className={`relative rounded-xl border p-4.5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md ${borderStyle} ${
-                isSelected ? "ring-2 ring-blue-600 ring-offset-2" : ""
-              }`}
+              className="p-4 px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors"
             >
-              {/* Header: Week number & Collision Badge */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 text-base">
-                    Week {item.weekNumber}
-                  </span>
-                  {item.weekNumber === 8 && (
-                    <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
-                      Midterms
-                    </span>
-                  )}
-                  {item.weekNumber === 16 && (
-                    <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
-                      Finals
-                    </span>
-                  )}
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-800 text-xs">
+                  W{item.weekNumber}
                 </div>
-
-                <div className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${badgeBg}`}>
-                  {isCollision ? (
-                    <>
-                      <AlertOctagon className="w-3.5 h-3.5 text-white animate-bounce" />
-                      <span>C<sub>w</sub> = {item.collisionCount}</span>
-                    </>
-                  ) : isCaution ? (
-                    <>
-                      <AlertTriangle className="w-3 h-3 text-amber-600" />
-                      <span>C<sub>w</sub> = {item.collisionCount}</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>C<sub>w</sub> = {item.collisionCount}</span>
-                    </>
-                  )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-slate-900 text-sm">
+                      Week {item.weekNumber} Academic Schedule
+                    </h4>
+                    {item.collisionCount >= 3 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                        Collision Week
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Courses: {item.courses.join(", ") || "None"} • {item.totalAssignments} assignments
+                  </p>
                 </div>
               </div>
 
-              {/* Warning label if Collision Week */}
-              {isCollision && (
-                <div className="mb-2.5 px-2 py-1 rounded-md bg-rose-100/90 border border-rose-300 text-rose-800 text-[11px] font-bold flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping"></span>
-                  COLLISION WEEK DETECTED
-                </div>
-              )}
-
-              {/* Load Index and visual progress */}
-              <div className="space-y-1.5 mb-3.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-medium">Load Index (L<sub>w</sub>):</span>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <span className="text-[11px] text-slate-400 block">Load Index</span>
                   <span className="font-bold text-slate-800 text-sm">{item.loadIndex} pts</span>
                 </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isCollision
-                        ? "bg-rose-600"
-                        : isCaution
-                        ? "bg-amber-500"
-                        : "bg-emerald-500"
-                    }`}
-                    style={{ width: `${loadPercent}%` }}
-                  ></div>
-                </div>
-              </div>
 
-              {/* Assignments Breakdown */}
-              <div className="text-xs text-slate-600 space-y-1 mb-3 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Total Assignments:</span>
-                  <span className="font-semibold text-slate-700">{item.totalAssignments}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Major Tasks (w ≥ 3):</span>
-                  <span className={`font-semibold ${isCollision ? "text-rose-700" : "text-slate-700"}`}>
-                    {item.majorAssignmentsCount}
-                  </span>
-                </div>
-              </div>
-
-              {/* Course Badges pill list */}
-              <div className="flex flex-wrap gap-1 mb-3">
-                {item.courses.map((courseCode) => (
+                <div className="text-right">
+                  <span className="text-[11px] text-slate-400 block">Collisions</span>
                   <span
-                    key={courseCode}
-                    className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200"
+                    className={`font-black text-sm ${
+                      item.collisionCount >= 3
+                        ? "text-rose-600"
+                        : item.collisionCount === 2
+                        ? "text-amber-600"
+                        : "text-emerald-600"
+                    }`}
                   >
-                    {courseCode}
+                    C = {item.collisionCount}
                   </span>
-                ))}
-                {item.courses.length === 0 && (
-                  <span className="text-[10px] text-slate-400 italic">No assignments due</span>
-                )}
-              </div>
+                </div>
 
-              {/* Action link */}
-              <Link
-                href={`/weeks/${item.weekNumber}`}
-                className={`mt-1 w-full text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                  isCollision
-                    ? "bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {isCollision ? "Inspect & Balance Moves" : "View Week Details"}
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+                <Link
+                  href={`/weeks/${item.weekNumber}`}
+                  className="px-4 py-2 rounded-xl bg-[#5850EC] text-white text-xs font-bold hover:bg-[#4B41DE] transition-colors"
+                >
+                  Inspect
+                </Link>
+              </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

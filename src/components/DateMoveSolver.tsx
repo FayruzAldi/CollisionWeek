@@ -67,7 +67,7 @@ export function DateMoveSolver({
       } else {
         setErrorMessage(data.error || "Failed to process date move proposal.");
       }
-    } catch (err) {
+    } catch {
       setErrorMessage("Network error processing date move.");
     } finally {
       setProcessingId(null);
@@ -75,15 +75,15 @@ export function DateMoveSolver({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+    <div className="trenning-card p-6 space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-sky-100 text-sky-700">
+            <span className="p-1.5 rounded-xl bg-[#EEF0FD] text-[#5850EC]">
               <ShieldCheck className="w-5 h-5" />
             </span>
-            <h3 className="font-bold text-slate-900 text-lg">
+            <h3 className="font-extrabold text-slate-900 text-base">
               Deterministic Minimal Date Move Engine
             </h3>
           </div>
@@ -95,7 +95,7 @@ export function DateMoveSolver({
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
           <span className="text-slate-500">Current Week {weekNumber}:</span>
-          <span className="font-bold text-rose-600">
+          <span className="font-extrabold text-rose-600">
             C<sub>{weekNumber}</sub> = {currentCollisionCount} Collisions
           </span>
         </div>
@@ -103,23 +103,23 @@ export function DateMoveSolver({
 
       {/* Notifications */}
       {successMessage && (
-        <div className="mt-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
           <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       {/* Candidate proposals */}
-      <div className="mt-5 space-y-4">
+      <div className="space-y-3.5">
         {candidates.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <p className="text-sm font-medium">No date shift required or no safe candidate found.</p>
             <p className="text-xs text-slate-400 mt-1">
               Week {weekNumber} has C<sub>w</sub> &lt; 3 or neighboring weeks are already at peak capacity.
@@ -134,9 +134,9 @@ export function DateMoveSolver({
             return (
               <div
                 key={candidateKey}
-                className={`p-4.5 rounded-xl border transition-all ${
+                className={`p-4.5 rounded-2xl border transition-all ${
                   resolvesCollision
-                    ? "border-emerald-200 bg-gradient-to-r from-emerald-50/40 via-white to-white hover:border-emerald-300"
+                    ? "border-emerald-200 bg-emerald-50/20 hover:border-emerald-300"
                     : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
@@ -144,14 +144,14 @@ export function DateMoveSolver({
                   {/* Left: Proposal summary */}
                   <div className="space-y-2 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
                         {cand.courseCode}
                       </span>
-                      <h4 className="font-bold text-slate-900 text-sm">
+                      <h4 className="font-extrabold text-slate-900 text-sm">
                         {cand.assignmentTitle}
                       </h4>
                       {idx === 0 && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#5850EC] text-white flex items-center gap-1 shadow-2xs">
                           <Sparkles className="w-3 h-3" />
                           Rank #1 Optimal Shift
                         </span>
@@ -160,25 +160,21 @@ export function DateMoveSolver({
 
                     {/* Move trajectory */}
                     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 font-medium">
-                      <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
-                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>Week {cand.originalWeek} ({formatDate(cand.originalDueDate)})</span>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-slate-400" />
-                      <div className="flex items-center gap-1 bg-emerald-100/70 text-emerald-900 px-2 py-1 rounded font-bold border border-emerald-200">
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                      <div className="flex items-center gap-1 bg-emerald-100/70 text-emerald-900 px-2 py-0.5 rounded-md font-bold border border-emerald-200">
                         <Calendar className="w-3.5 h-3.5 text-emerald-700" />
                         <span>Week {cand.proposedWeek} ({formatDate(cand.proposedDueDate)})</span>
                       </div>
-                      <span className="text-slate-400">•</span>
-                      <span className="text-slate-500 text-[11px]">
-                        Shift: {cand.proposedWeek > cand.originalWeek ? `+${cand.weekDelta} week(s)` : `-${cand.weekDelta} week(s)`}
-                      </span>
                     </div>
 
                     {/* Collision Impact delta */}
                     <div className="flex flex-wrap items-center gap-3 text-xs pt-1">
                       <div className="flex items-center gap-1 text-slate-700">
-                        <span className="text-slate-400">Week {cand.originalWeek} Impact:</span>
+                        <span className="text-slate-400">Week {cand.originalWeek}:</span>
                         <span className="line-through text-rose-500 font-semibold">
                           C = {cand.originalCollisionCount}
                         </span>
@@ -190,7 +186,7 @@ export function DateMoveSolver({
                       <span className="text-slate-300">|</span>
                       <div className="flex items-center gap-1 text-slate-700">
                         <span className="text-slate-400">Target Week {cand.proposedWeek}:</span>
-                        <span className="font-semibold text-slate-600">
+                        <span className="text-slate-600 font-semibold">
                           C = {cand.originalTargetCollisionCount}
                         </span>
                         <ArrowRight className="w-3 h-3 text-slate-400" />
@@ -210,12 +206,12 @@ export function DateMoveSolver({
                     </p>
                   </div>
 
-                  {/* Right: Lecturer Action Buttons (US-04) */}
+                  {/* Right: Actions */}
                   <div className="flex sm:flex-col lg:flex-row items-center gap-2 pt-2 sm:pt-0">
                     <button
                       onClick={() => handleAction(cand, "ACCEPT")}
                       disabled={isProcessing}
-                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition-all disabled:opacity-50"
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#5850EC] hover:bg-[#4B41DE] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all disabled:opacity-50"
                     >
                       <CheckCircle className="w-4 h-4" />
                       {isProcessing ? "Processing..." : "Approve & Shift Date"}
@@ -223,9 +219,8 @@ export function DateMoveSolver({
                     <button
                       onClick={() => handleAction(cand, "REJECT")}
                       disabled={isProcessing}
-                      className="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                      className="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                     >
-                      <XCircle className="w-4 h-4 text-slate-400" />
                       Decline
                     </button>
                   </div>

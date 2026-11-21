@@ -9,20 +9,38 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#f0f7ff",
-          100: "#e0effe",
-          200: "#bae0fd",
-          500: "#0284c7",
-          600: "#0369a1",
-          700: "#075985",
-          900: "#0c4a6e",
+        trenning: {
+          50: "#EEF0FD",
+          100: "#E0E3FC",
+          200: "#C6CBF9",
+          300: "#9FA7F5",
+          400: "#757DEE",
+          500: "#5850EC", // Primary Purple / Indigo from inspiration images
+          600: "#4B41DE",
+          700: "#3E34C7",
+          800: "#332B9F",
+          900: "#2B257E",
+        },
+        surface: {
+          DEFAULT: "#FFFFFF",
+          subtle: "#F8F9FB",
+          muted: "#F3F4F6",
+          border: "#E9ECF2",
         },
         collision: {
           safe: "#10b981", // Emerald
           caution: "#f59e0b", // Amber
-          danger: "#e11d48", // Crimson
+          danger: "#ef4444", // Crimson
         },
+      },
+      borderRadius: {
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+        "4xl": "2rem",
+      },
+      boxShadow: {
+        card: "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)",
+        "card-hover": "0 8px 24px -4px rgba(88, 80, 236, 0.08), 0 4px 12px -2px rgba(0,0,0,0.04)",
       },
     },
   },
