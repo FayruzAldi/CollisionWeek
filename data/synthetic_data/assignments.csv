@@ -1,0 +1,29 @@
+assignment_id,course_code,course_name,assignment_title,due_date,weight,is_major,sub_topics
+A01,GE101,Academic Writing,Reading Summary,2027-03-05,1,false,Main argument;Paraphrasing
+A02,IF101,Algorithms,Quiz 1,2027-03-12,1,false,Big-O notation
+A03,IF104,Statistics,Problem Set 1,2027-03-12,2,false,Mean and variance;Probability basics
+A04,IF102,Database Systems,ER Diagram Task,2027-03-19,3,true,Entities and relationships;Cardinality
+A05,IF103,Web Programming,HTML/CSS Mini Project,2027-03-26,3,true,Semantic HTML;Flexbox layout
+A06,GE102,Discrete Mathematics,Problem Set 1,2027-03-26,2,false,Propositional logic;Truth tables
+A07,IF101,Algorithms,Assignment 1: Sorting,2027-04-02,3,true,Merge sort;Quick sort;Complexity analysis
+A08,IF102,Database Systems,SQL Queries,2027-04-02,3,true,Joins;Aggregation;Subqueries
+A09,IF104,Statistics,Statistics Report,2027-04-02,3,true,Hypothesis testing;Data visualization
+A10,IF105,Computer Networks,Lab 1: Packet Tracing,2027-04-02,2,false,OSI layers;Wireshark filters
+A11,GE101,Academic Writing,Essay Draft,2027-04-09,2,false,Thesis statement;Citation
+A12,IF106,Human-Computer Interaction,User Research Plan,2027-04-16,3,true,Interview guide;Persona
+A13,IF103,Web Programming,JavaScript Interactive Page,2027-04-23,3,true,DOM events;Fetch API
+A14,IF101,Algorithms,Assignment 2: Graphs,2027-04-30,4,true,BFS and DFS;Shortest path
+A15,IF105,Computer Networks,Subnetting Project,2027-04-30,4,true,IPv4 subnetting;VLSM
+A16,IF106,Human-Computer Interaction,Prototype,2027-04-30,3,true,Wireframing;Usability heuristics
+A17,GE102,Discrete Mathematics,Proof Set 2,2027-04-30,3,true,Induction;Set proofs
+A18,IF102,Database Systems,Normalization Task,2027-05-07,3,true,Functional dependencies;3NF and BCNF
+A19,IF104,Statistics,Quiz 2,2027-05-14,1,false,Confidence intervals
+A20,GE101,Academic Writing,Final Essay,2027-05-14,3,true,Argument structure;Citation
+A21,IF103,Web Programming,Group Project Checkpoint,2027-05-21,3,true,REST API design;Authentication
+A22,IF101,Algorithms,Final Project,2027-05-28,5,true,Algorithm design;Complexity analysis
+A23,IF102,Database Systems,Database Group Project,2027-05-28,5,true,Schema design;Query optimization
+A24,IF103,Web Programming,Final Web App,2027-05-28,5,true,Deployment;State management
+A25,IF105,Computer Networks,Lab Report,2027-05-28,3,true,Routing protocols;Network troubleshooting
+A26,IF106,Human-Computer Interaction,Usability Test Report,2027-05-28,3,true,Test protocol;Findings analysis
+A27,GE102,Discrete Mathematics,Problem Set 3,2027-06-04,2,false,Combinatorics;Recurrence relations
+A28,IF104,Statistics,Final Report,2027-06-11,3,true,Regression;Reporting results

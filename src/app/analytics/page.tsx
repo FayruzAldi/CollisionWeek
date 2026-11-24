@@ -44,7 +44,20 @@ export default function LecturerAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [courseFilter, setCourseFilter] = useState("all");
+  const [coursesList, setCoursesList] = useState<any[]>([]);
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch("/api/courses");
+      if (res.ok) {
+        const json = await res.json();
+        setCoursesList(json.courses || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat mata kuliah:", err);
+    }
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -64,6 +77,10 @@ export default function LecturerAnalyticsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
@@ -94,12 +111,10 @@ export default function LecturerAnalyticsPage() {
           className="w-full sm:w-56 self-start sm:self-auto"
           options={[
             { value: "all", label: "Semua matkul" },
-            { value: "IF2110", label: "IF2110 · Sistem Basis Data" },
-            { value: "IF2120", label: "IF2120 · Rekayasa Perangkat Lunak" },
-            { value: "IF2130", label: "IF2130 · Jaringan Komputer" },
-            { value: "IF2140", label: "IF2140 · Desain & Analisis Algoritma" },
-            { value: "IF2150", label: "IF2150 · Sistem Operasi" },
-            { value: "IF2160", label: "IF2160 · Kecerdasan Buatan" },
+            ...coursesList.map((course) => ({
+              value: course.id,
+              label: `${course.courseCode} · ${course.courseName}`,
+            })),
           ]}
         />
       </div>

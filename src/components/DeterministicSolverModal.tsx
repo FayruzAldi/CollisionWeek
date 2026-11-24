@@ -26,7 +26,7 @@ export function DeterministicSolverModal({
   onClose,
   onSuccess,
 }: DeterministicSolverModalProps) {
-  const [selectedWeek, setSelectedWeek] = useState<number>(8);
+  const [selectedWeek, setSelectedWeek] = useState<number>(10);
   const [candidates, setCandidates] = useState<DateMoveProposalCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -102,14 +102,14 @@ export function DeterministicSolverModal({
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => setSelectedWeek(8)}
+                onClick={() => setSelectedWeek(10)}
                 className={`w-full p-2.5 rounded-xl border text-left transition-colors flex items-center justify-between text-xs ${
-                  selectedWeek === 8
+                  selectedWeek === 10
                     ? "bg-cw-surface border-cw-accent ring-1 ring-cw-accent/30 text-cw-ink font-semibold"
                     : "bg-cw-surface border-cw-line text-cw-muted hover:text-cw-ink hover:bg-cw-sunken"
                 }`}
               >
-                <span>Pekan 8 (UTS)</span>
+                <span>Pekan 10 (Proyek Puncak)</span>
                 <Badge variant="danger" shape="pill">
                   Cw = 4
                 </Badge>
@@ -125,6 +125,21 @@ export function DeterministicSolverModal({
                 }`}
               >
                 <span>Pekan 14 (pra-UAS)</span>
+                <Badge variant="danger" shape="pill">
+                  Cw = 5
+                </Badge>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedWeek(6)}
+                className={`w-full p-2.5 rounded-xl border text-left transition-colors flex items-center justify-between text-xs ${
+                  selectedWeek === 6
+                    ? "bg-cw-surface border-cw-accent ring-1 ring-cw-accent/30 text-cw-ink font-semibold"
+                    : "bg-cw-surface border-cw-line text-cw-muted hover:text-cw-ink hover:bg-cw-sunken"
+                }`}
+              >
+                <span>Pekan 6 (Mid-term)</span>
                 <Badge variant="warning" shape="pill">
                   Cw = 3
                 </Badge>

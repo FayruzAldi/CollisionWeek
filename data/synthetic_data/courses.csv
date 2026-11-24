@@ -1,0 +1,9 @@
+course_code,course_name,credits,lecturer_id
+IF101,Algorithms,3,L01
+IF102,Database Systems,3,L02
+IF103,Web Programming,3,L03
+IF104,Statistics,3,L04
+IF105,Computer Networks,3,L05
+IF106,Human-Computer Interaction,2,L03
+GE101,Academic Writing,2,L06
+GE102,Discrete Mathematics,3,L01

@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Program {
+  id                String         @id @default(uuid())
+  code              String         @unique
+  name              String
+  semesterStartDate DateTime
+  totalWeeks        Int            @default(16)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  users          User[]
+  courses        Course[]
+  weeklyMetrics  WeeklyMetric[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  programId String
+  name      String
+  email     String   @unique
+  role      String   // "STUDENT" | "LECTURER" | "ADMIN"
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  program       Program        @relation(fields: [programId], references: [id], onDelete: Cascade)
+  coursesTaught Course[]       @relation("LecturerCourses")
+  helpRequests  HelpRequest[]  @relation("UserHelpRequests")
+  helpResponses HelpResponse[] @relation("UserHelpResponses")
+}
+
+model Course {
+  id            String   @id @default(uuid())
+  programId     String
+  lecturerId    String
+  courseCode    String   @unique
+  courseName    String
+  semesterLevel Int      @default(5)
+  color         String?  @default("#3b82f6")
+  createdAt     DateTime @default(now())
+
+  program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  lecturer    User         @relation("LecturerCourses", fields: [lecturerId], references: [id])
+  assignments Assignment[]
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  courseId    String
+  title       String
+  type        String   // "QUIZ" | "LAB" | "PROJECT" | "EXAM"
+  weightScore Int      // 1..5. >=3 is major assignment
+  dueDate     DateTime
+  weekNumber  Int
+  subtopics   String   // JSON string array e.g. ["3NF Normalization", "Indexing"]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course             Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dateMoveProposals  DateMoveProposal[]
+  helpRequests       HelpRequest[]
+}
+
+model WeeklyMetric {
+  id             String   @id @default(uuid())
+  programId      String
+  weekNumber     Int
+  loadIndex      Int
+  collisionCount Int
+  isFlagged      Boolean
+  computedAt     DateTime @default(now())
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, weekNumber])
+}
+
+model DateMoveProposal {
+  id                  String   @id @default(uuid())
+  assignmentId        String
+  originalWeek        Int
+  proposedWeek        Int
+  proposedDueDate     DateTime
+  loadReductionDelta  Int
+  status              String   @default("PENDING") // "PENDING" | "ACCEPTED" | "REJECTED"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model HelpRequest {
+  id              String    @id @default(uuid())
+  assignmentId    String
+  requesterId     String
+  subtopicLabel   String
+  questionDetail  String
+  status          String    @default("OPEN") // "OPEN" | "IN_PROGRESS" | "RESOLVED"
+  createdAt       DateTime  @default(now())
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+
+  assignment Assignment     @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  requester  User           @relation("UserHelpRequests", fields: [requesterId], references: [id])
+  responses  HelpResponse[]
+}
+
+model HelpResponse {
+  id            String    @id @default(uuid())
+  requestId     String
+  helperId      String
+  responseType  String    // "WRITTEN" | "RECORDED_LINK" | "SESSION_20MIN"
+  contentOrUrl  String
+  scheduledSlot DateTime?
+  isAccepted    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  request HelpRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  helper  User        @relation("UserHelpResponses", fields: [helperId], references: [id])
+}
