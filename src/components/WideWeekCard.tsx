@@ -34,7 +34,7 @@ export function WideWeekCard({
     <div className="cw-card p-4 sm:p-5 flex flex-col justify-between">
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Banner Ilustrasi 176x112 rounded-xl */}
-        <div className="w-full sm:w-44 h-28 rounded-xl relative overflow-hidden flex-shrink-0 border border-cw-line">
+        <div className="w-full sm:w-44 h-28 rounded-xl relative overflow-hidden flex-shrink-0">
           <PastelIllustration type={illustrationType} palette={palette} />
           <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-cw-ink/80 text-white text-[11px] font-medium backdrop-blur-sm">
             Pekan {weekNumber} · {courses.length} matkul
@@ -92,7 +92,7 @@ export function WideWeekCard({
       </div>
 
       {/* Strip footer rekomendasi */}
-      <div className="mt-3.5 pt-3 cw-hairline flex items-center justify-between text-xs text-cw-ink bg-cw-subtle p-2.5 px-3 rounded-xl border border-cw-line">
+      <div className="mt-3.5 pt-3 cw-hairline flex items-center justify-between text-xs text-cw-ink bg-cw-subtle p-2.5 px-3 rounded-xl">
         <p className="text-xs text-cw-muted truncate pr-2">
           {recommendation}
         </p>

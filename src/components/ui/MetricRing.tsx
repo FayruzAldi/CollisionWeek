@@ -26,11 +26,11 @@ export function MetricRing({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - ratio * circumference;
 
-  const toneColors = {
-    danger: "#E5484D",
-    warning: "#E9A23B",
-    success: "#22A06B",
-    neutral: "#5850EC",
+  const toneClasses = {
+    danger: "stroke-semantic-danger-ring",
+    warning: "stroke-semantic-warning-ring",
+    success: "stroke-semantic-success-ring",
+    neutral: "stroke-cw-accent",
   };
 
   const displayText = display ?? `${value}${unit ? ` ${unit}` : ""}`;
@@ -47,7 +47,7 @@ export function MetricRing({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke="#ECEEF3"
+            className="stroke-cw-line"
             strokeWidth={strokeWidth}
             fill="transparent"
           />
@@ -55,13 +55,12 @@ export function MetricRing({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={toneColors[tone]}
+            className={`transition-all duration-300 ${toneClasses[tone]}`}
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             fill="transparent"
-            className="transition-all duration-300"
           />
         </svg>
       </div>

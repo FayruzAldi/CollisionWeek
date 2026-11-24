@@ -68,12 +68,6 @@ export function WeekCard({ item, maxLoad = 20 }: WeekCardProps) {
                 Kritis
               </Badge>
             </div>
-          ) : isCaution ? (
-            <div className="absolute top-2.5 right-2.5">
-              <Badge variant="warning" shape="pill">
-                Waspada
-              </Badge>
-            </div>
           ) : null}
         </div>
 

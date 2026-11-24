@@ -6,6 +6,7 @@ import { Tag } from "@/components/ui/Tag";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Select } from "@/components/ui/Select";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 
 interface SubtopicStat {
@@ -103,24 +104,24 @@ export default function LecturerAnalyticsPage() {
           </p>
         </div>
 
-        <select
+        <Select
           value={courseFilter}
-          onChange={(e) => setCourseFilter(e.target.value)}
+          onChange={setCourseFilter}
           aria-label="Filter berdasarkan matkul"
-          className="text-xs rounded-xl bg-cw-surface border border-cw-line px-3 py-1.5 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40 self-start sm:self-auto"
-        >
-          <option value="all">Semua matkul</option>
-          {coursesList.map((c) => (
-            <option key={c.courseCode} value={c.courseCode}>
-              {c.courseCode} · {c.courseName}
-            </option>
-          ))}
-        </select>
+          className="w-full sm:w-56 self-start sm:self-auto"
+          options={[
+            { value: "all", label: "Semua matkul" },
+            ...coursesList.map((course) => ({
+              value: course.id,
+              label: `${course.courseCode} · ${course.courseName}`,
+            })),
+          ]}
+        />
       </div>
 
       {/* 4 Metrik sebagai Baris Tanpa Kartu Dipisah Hairline Vertikal */}
-      <div className="cw-card p-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-cw-line">
+      <div className="py-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-cw-line border-y border-cw-line">
           {/* Metrik 1 */}
           <div className="p-4 sm:px-6 first:pl-0">
             <span className="text-[11px] font-medium text-cw-faint block">
@@ -176,7 +177,7 @@ export default function LecturerAnalyticsPage() {
       </div>
 
       {/* Peringkat Sub-topik */}
-      <div className="cw-card p-6 space-y-4">
+      <section className="space-y-4">
         <div>
           <h3 className="text-base font-semibold text-cw-ink">
             Peringkat sub-topik
@@ -280,7 +281,7 @@ export default function LecturerAnalyticsPage() {
             })}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

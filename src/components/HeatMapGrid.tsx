@@ -121,7 +121,7 @@ export function HeatMapGrid({ metrics }: HeatMapGridProps) {
                       Jadwal Pekan {item.weekNumber}
                     </h4>
                     <p className="text-xs text-cw-muted mt-0.5">
-                      {item.courses.join(", ") || "Tidak ada matkul"} · {item.totalAssignments} tugas
+                      {item.courses.join(", ") || "Tidak ada matkul"} — {item.totalAssignments} tugas
                     </p>
                   </div>
                 </div>

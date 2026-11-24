@@ -11,14 +11,22 @@ import {
   Upload,
   Info,
   Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
 
 interface RailProps {
   onOpenContentModal: () => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
-export function Rail({ onOpenContentModal }: RailProps) {
+export function Rail({
+  onOpenContentModal,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
+}: RailProps) {
   const pathname = usePathname();
   const { currentUser } = useRole();
 
@@ -40,7 +48,7 @@ export function Rail({ onOpenContentModal }: RailProps) {
         {/* Logo */}
         <Link
           href="/"
-          className="w-8 h-8 rounded-xl bg-cw-accent text-white flex items-center justify-center font-bold text-xs shadow-sm hover:bg-cw-accent-hover transition-colors"
+          className="w-8 h-8 rounded-xl bg-cw-accent text-white flex items-center justify-center font-semibold text-xs shadow-sm hover:bg-cw-accent-hover transition-colors"
           title="Collision Week"
           aria-label="Beranda Collision Week"
         >
@@ -77,13 +85,29 @@ export function Rail({ onOpenContentModal }: RailProps) {
 
       {/* Bottom: Action +, About, Avatar */}
       <div className="flex flex-col items-center gap-3 w-full px-2">
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            type="button"
+            title={isSidebarCollapsed ? "Lebarkan sidebar" : "Ciutkan sidebar"}
+            aria-label={isSidebarCollapsed ? "Lebarkan sidebar" : "Ciutkan sidebar"}
+            className="w-9 h-9 rounded-xl text-cw-faint hover:text-cw-ink hover:bg-cw-sunken flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="w-5 h-5" strokeWidth={1.75} />
+            ) : (
+              <PanelLeftClose className="w-5 h-5" strokeWidth={1.75} />
+            )}
+          </button>
+        )}
+
         {/* Tombol Buat Baru (+) */}
         <button
           onClick={onOpenContentModal}
           type="button"
           title="Buat baru"
           aria-label="Buat baru"
-          className="w-9 h-9 rounded-xl bg-cw-accent hover:bg-cw-accent-hover text-white flex items-center justify-center shadow-sm transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
+          className="w-9 h-9 rounded-xl bg-cw-accent hover:bg-cw-accent-hover text-white flex items-center justify-center shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
         >
           <Plus className="w-5 h-5" strokeWidth={2} />
         </button>

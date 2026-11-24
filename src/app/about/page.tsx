@@ -92,7 +92,7 @@ export default function AboutPage() {
       </div>
 
       {/* Validasi Empiris */}
-      <section className="cw-card p-6 space-y-5">
+      <section className="space-y-5">
         <div>
           <h3 className="text-base font-semibold text-cw-ink">
             Survei 53 mahasiswa dari 48 program studi
@@ -102,9 +102,9 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-cw-line border-y border-cw-line">
           {empiricalSurveyStats.map((stat, i) => (
-            <div key={i} className="p-4 rounded-xl bg-cw-subtle border border-cw-line space-y-1">
+            <div key={i} className="px-4 py-5 first:pl-0 last:pr-0 space-y-1">
               <span className="text-2xl font-semibold text-cw-ink block tabular-nums">
                 {stat.metric}
               </span>
@@ -125,7 +125,7 @@ export default function AboutPage() {
       </section>
 
       {/* Rencana Rilis Fitur Berikutnya */}
-      <section className="cw-card p-6 space-y-4">
+      <section className="space-y-4">
         <div>
           <h3 className="text-base font-semibold text-cw-ink">
             Peta jalan pengembangan
@@ -173,7 +173,7 @@ export default function AboutPage() {
       </section>
 
       {/* Tim Pengembang */}
-      <section className="cw-card p-6 space-y-4">
+      <section className="space-y-4">
         <div>
           <h3 className="text-base font-semibold text-cw-ink">
             Tim &quot;daftar krna gratis&quot;
@@ -186,7 +186,7 @@ export default function AboutPage() {
         <div className="divide-y divide-cw-line">
           {teamMembers.map((member, i) => (
             <div key={i} className="py-3 first:pt-1 last:pb-1 flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-cw-accent-soft text-cw-accent flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-cw-accent-soft text-cw-accent flex items-center justify-center font-semibold text-xs flex-shrink-0">
                 {member.name.charAt(0)}
               </div>
               <div className="min-w-0">
