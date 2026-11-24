@@ -3,6 +3,7 @@
 import React from "react";
 import { LayoutGrid, List } from "lucide-react";
 import { Pill } from "./ui/Pill";
+import { Select } from "./ui/Select";
 
 export type FilterStatus = "ALL" | "FLAGGED" | "CAUTION" | "SAFE";
 export type SortOption = "WEEK" | "LOAD";
@@ -59,15 +60,16 @@ export function ContentToolbar({
 
       {/* Kanan: Urutkan + Toggle Tampilan */}
       <div className="flex items-center gap-2.5 self-end sm:self-auto">
-        <select
+        <Select<SortOption>
           value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortOption)}
+          onChange={onSortChange}
           aria-label="Urutan tampilan"
-          className="text-xs rounded-xl bg-cw-surface border border-cw-line px-2.5 py-1.5 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
-        >
-          <option value="WEEK">Urutkan: Pekan</option>
-          <option value="LOAD">Urutkan: Beban</option>
-        </select>
+          className="w-40"
+          options={[
+            { value: "WEEK", label: "Urutkan: Pekan" },
+            { value: "LOAD", label: "Urutkan: Beban" },
+          ]}
+        />
 
         <div className="flex items-center bg-cw-surface border border-cw-line rounded-xl p-0.5" role="group" aria-label="Mode tampilan">
           <button

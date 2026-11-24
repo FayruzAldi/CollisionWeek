@@ -12,6 +12,7 @@ import { Pill } from "@/components/ui/Pill";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
+import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import {
   Search,
@@ -149,19 +150,19 @@ export default function PeerHelpBoardPage() {
             />
           </div>
 
-          <select
+          <Select
             value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
+            onChange={setSelectedCourse}
             aria-label="Pilih matkul"
-            className="text-xs rounded-xl bg-cw-surface border border-cw-line px-2.5 py-1.5 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
-          >
-            <option value="all">Semua matkul</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.courseCode} · {c.courseName}
-              </option>
-            ))}
-          </select>
+            className="w-44 sm:w-56"
+            options={[
+              { value: "all", label: "Semua matkul" },
+              ...courses.map((course) => ({
+                value: course.id,
+                label: `${course.courseCode} · ${course.courseName}`,
+              })),
+            ]}
+          />
         </div>
       </div>
 
@@ -218,25 +219,7 @@ export default function PeerHelpBoardPage() {
 
                   {/* Badan Kartu */}
                   <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <Tag>#{r.subtopicLabel}</Tag>
-                      <Badge
-                        variant={
-                          isResolved
-                            ? "success"
-                            : r.status === "IN_PROGRESS"
-                            ? "warning"
-                            : "neutral"
-                        }
-                        shape="pill"
-                      >
-                        {isResolved
-                          ? "Selesai"
-                          : r.status === "IN_PROGRESS"
-                          ? "Sedang dibahas"
-                          : "Terbuka"}
-                      </Badge>
-                    </div>
+                    <Tag>#{r.subtopicLabel}</Tag>
 
                     <h3 className="font-semibold text-cw-ink text-[15px] leading-snug line-clamp-1 group-hover:text-cw-accent transition-colors">
                       {r.assignment.title}

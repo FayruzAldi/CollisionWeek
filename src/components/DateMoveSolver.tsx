@@ -114,7 +114,7 @@ export function DateMoveSolver({
                 {/* Informasi usulan */}
                 <div className="space-y-1.5 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-cw-ink bg-cw-sunken px-2 py-0.5 rounded-md">
+                    <span className="text-[11px] text-center font-semibold text-cw-ink bg-cw-sunken px-2 py-0.5 rounded-md">
                       {cand.courseCode}
                     </span>
                     <h4 className="text-[13px] font-semibold text-cw-ink">

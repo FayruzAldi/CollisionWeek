@@ -243,22 +243,22 @@ export default function WeekInspectorPage() {
               </div>
 
               {/* Rincian 3 Kolom */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-cw-line border-y border-cw-line">
+                <div className="py-3 sm:pr-4">
                   <span className="text-[11px] text-cw-faint block">Tenggat</span>
                   <span className="text-xs font-semibold text-cw-ink mt-0.5 block">
                     {formatDate(activeAssignment.dueDate)}
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line">
+                <div className="py-3 sm:px-4">
                   <span className="text-[11px] text-cw-faint block">Bobot</span>
                   <span className="text-xs font-semibold text-cw-ink mt-0.5 block">
                     Bobot {activeAssignment.weightScore}/5 ({activeAssignment.isMajor ? "Tugas besar" : "Tugas biasa"})
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-cw-subtle border border-cw-line">
+                <div className="py-3 sm:pl-4">
                   <span className="text-[11px] text-cw-faint block">Pertanyaan bantuan</span>
                   <span className="text-xs font-semibold text-cw-accent mt-0.5 block">
                     {activeAssignment.helpRequestsCount} pertanyaan

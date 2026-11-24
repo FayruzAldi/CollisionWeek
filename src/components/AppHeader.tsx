@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Plus, Upload, Menu } from "lucide-react";
 import { Button } from "./ui/Button";
 
@@ -16,19 +15,8 @@ export function AppHeader({
   onOpenContentModal,
   onToggleMobileMenu,
 }: AppHeaderProps) {
-  const pathname = usePathname();
-
-  const navTabs = [
-    { href: "/", label: "Dasbor" },
-    { href: "/weeks/8", label: "Pekan" },
-    { href: "/help", label: "Bantuan" },
-    { href: "/analytics", label: "Analitik" },
-    { href: "/import", label: "Impor" },
-    { href: "/about", label: "Tentang" },
-  ];
-
   return (
-    <header className="sticky top-0 z-20 bg-cw-surface/95 backdrop-blur border-b border-cw-line">
+    <header className="sticky top-0 z-20 bg-cw-surface/95 backdrop-blur-sm border-b border-cw-line">
       {/* Baris 1: Brand & Aksi Utama (64px) */}
       <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -44,7 +32,7 @@ export function AppHeader({
 
           {/* Program Header */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cw-accent-soft text-cw-accent flex items-center justify-center font-bold text-xs flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-cw-accent-soft text-cw-accent flex items-center justify-center font-semibold text-xs flex-shrink-0">
               TI
             </div>
             <div>
@@ -79,29 +67,7 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Baris 2: Tab Navigasi Halaman (44px) */}
-      <div className="h-11 px-4 sm:px-6 flex items-center gap-6 text-[13px] border-t border-cw-line overflow-x-auto scrollbar-none">
-        {navTabs.map((tab) => {
-          const isActive =
-            tab.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(tab.href);
 
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`h-full flex items-center border-b-2 transition-colors whitespace-nowrap flex-shrink-0 px-0.5 ${
-                isActive
-                  ? "border-cw-accent text-cw-ink font-semibold"
-                  : "border-transparent text-cw-muted hover:text-cw-ink"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
     </header>
   );
 }

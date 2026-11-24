@@ -174,7 +174,7 @@ export function DeterministicSolverModal({
                     key={key}
                     className="p-3.5 rounded-xl border border-cw-line bg-cw-surface space-y-2 text-xs"
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center text-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Tag>{cand.courseCode}</Tag>
                         <h4 className="font-semibold text-cw-ink text-xs truncate">

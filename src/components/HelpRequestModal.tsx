@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRole } from "@/context/RoleContext";
 import { Send } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Field } from "./ui/Field";
+import { Select } from "./ui/Select";
 
 interface AssignmentOption {
   id: string;
@@ -47,6 +48,14 @@ export function HelpRequestModal({
   const [error, setError] = useState<string | null>(null);
 
   const activeAssignment = assignments.find((a) => a.id === selectedAssignmentId);
+
+  useEffect(() => {
+    if (selectedAssignmentId) return;
+    const initialAssignmentId =
+      assignments.find((assignment) => assignment.id === preselectedAssignmentId)?.id ??
+      assignments[0]?.id;
+    if (initialAssignmentId) setSelectedAssignmentId(initialAssignmentId);
+  }, [assignments, preselectedAssignmentId, selectedAssignmentId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,21 +118,19 @@ export function HelpRequestModal({
 
         {/* Pilih Tugas */}
         <Field id="assignment-select" label="Pilih tugas" required>
-          <select
+          <Select
             id="assignment-select"
             value={selectedAssignmentId}
-            onChange={(e) => {
-              setSelectedAssignmentId(e.target.value);
+            onChange={(assignmentId) => {
+              setSelectedAssignmentId(assignmentId);
               setSelectedSubtopic("");
             }}
-            className="w-full text-xs rounded-xl bg-cw-surface border border-cw-line px-3 py-2 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40"
-          >
-            {assignments.map((a) => (
-              <option key={a.id} value={a.id}>
-                [{a.courseCode}] {a.title} (Pekan {a.weekNumber})
-              </option>
-            ))}
-          </select>
+            className="w-full"
+            options={assignments.map((assignment) => ({
+              value: assignment.id,
+              label: `[${assignment.courseCode}] ${assignment.title} (Pekan ${assignment.weekNumber})`,
+            }))}
+          />
         </Field>
 
         {/* Pilih Sub-topik */}

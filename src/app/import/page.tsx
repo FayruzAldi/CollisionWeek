@@ -217,7 +217,7 @@ export default function CsvIngestionPage() {
             {validationResult ? (
               <div className="space-y-4">
                 {/* 3 Angka Ringkasan dengan Hairline */}
-                <div className="grid grid-cols-3 divide-x divide-cw-line border border-cw-line rounded-xl bg-cw-subtle p-2 text-center text-xs">
+                <div className="grid grid-cols-3 divide-x divide-cw-line border-y border-cw-line py-3 text-center text-xs">
                   <div>
                     <span className="text-[11px] text-cw-faint block">Baris</span>
                     <span className="text-base font-semibold text-cw-ink tabular-nums">
@@ -248,7 +248,7 @@ export default function CsvIngestionPage() {
                       {validationResult.invalidRows.map((err) => (
                         <div
                           key={err.rawRowNumber}
-                          className="p-2.5 rounded-xl bg-semantic-danger-soft/50 border border-semantic-danger-soft text-xs text-semantic-danger-fg space-y-0.5"
+                          className="py-2 text-xs text-semantic-danger-fg space-y-0.5"
                         >
                           <span className="font-semibold block font-mono">
                             Baris {err.rawRowNumber}:
@@ -274,7 +274,7 @@ export default function CsvIngestionPage() {
                       {validationResult.validRows.slice(0, 10).map((v, i) => (
                         <div
                           key={i}
-                          className="p-2 rounded-xl bg-cw-subtle border border-cw-line text-xs flex items-center justify-between"
+                          className="py-2 border-b border-cw-line last:border-b-0 text-xs flex items-center justify-between"
                         >
                           <div className="truncate pr-2">
                             <span className="font-semibold text-cw-ink mr-2">[{v.course_code}]</span>
