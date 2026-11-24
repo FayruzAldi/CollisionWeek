@@ -1,0 +1,11 @@
+request_id,assignment_id,sub_topic,requester_id,helper_id,request_date,reply_type,hours_to_first_response,status
+R01,A07,Merge sort,S37,S23,2027-03-30,written,2,resolved
+R02,A07,Complexity analysis,S31,S23,2027-03-31,session,5,resolved
+R03,A08,Joins,S30,S06,2027-03-31,recorded,3,resolved
+R04,A09,Hypothesis testing,S36,S11,2027-04-01,written,9,resolved
+R05,A13,Fetch API,S18,S34,2027-04-21,written,4,resolved
+R06,A14,BFS and DFS,S13,S19,2027-04-26,written,6,resolved
+R07,A14,Shortest path,S01,,2027-04-26,,,open
+R08,A15,IPv4 subnetting,S10,S32,2027-04-26,recorded,3,resolved
+R09,A16,Usability heuristics,S04,,2027-04-27,,,open
+R10,A17,Induction,S28,S19,2027-04-27,written,12,resolved

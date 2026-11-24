@@ -24,7 +24,7 @@ export function Rail({ onOpenContentModal }: RailProps) {
 
   const navItems = [
     { href: "/", label: "Dasbor", icon: LayoutDashboard },
-    { href: "/weeks/8", label: "Pekan", icon: CalendarDays },
+    { href: "/weeks/10", label: "Pekan", icon: CalendarDays },
     { href: "/help", label: "Bantuan Sebaya", icon: Users },
     { href: "/analytics", label: "Analitik", icon: BarChart3 },
     { href: "/import", label: "Impor", icon: Upload },

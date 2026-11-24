@@ -48,8 +48,28 @@ export default function HomePage() {
     fetchHeatmap();
   }, []);
 
-  const week8Metric = data?.metrics.find((m) => m.weekNumber === 8);
-  const week14Metric = data?.metrics.find((m) => m.weekNumber === 14);
+  const flaggedMetrics = (data?.metrics || [])
+    .filter((m) => m.isFlagged || m.collisionCount >= 3)
+    .sort((a, b) => b.collisionCount - a.collisionCount);
+
+  const card1 = flaggedMetrics[0] || data?.metrics.find((m) => m.weekNumber === 10) || data?.metrics[0];
+  const card2 = flaggedMetrics[1] || data?.metrics.find((m) => m.weekNumber === 14) || data?.metrics[1];
+
+  const getWeekTitle = (weekNum: number) => {
+    if (weekNum === 6) return "Penumpukan Tugas Tengah Semester";
+    if (weekNum === 10) return "Pekan Puncak Proyek & Tugas Besar";
+    if (weekNum === 14) return "Tenggat Proyek Akhir Semester";
+    if (weekNum === 8) return "Ujian Tengah Semester";
+    if (weekNum === 16) return "Ujian Akhir Semester";
+    return `Jadwal Akademik Pekan ${weekNum}`;
+  };
+
+  const getRecommendation = (weekNum: number) => {
+    if (weekNum === 10) return "Optimal: geser Proyek Jaringan Komputer ke Pekan 11 agar Cw turun ke 3";
+    if (weekNum === 14) return "Optimal: geser Proyek Basis Data ke Pekan 15 agar Cw turun ke 3";
+    if (weekNum === 6) return "Optimal: geser Tugas Statistik ke Pekan 7 agar Cw turun ke 2";
+    return "Jalankan solver deterministik untuk menyeimbangkan beban pekan";
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-7">
@@ -77,7 +97,7 @@ export default function HomePage() {
               Pekan Paling Padat
             </h3>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-semantic-danger-soft text-semantic-danger-fg">
-              {data?.summary.flaggedWeeksCount || 2} pekan kritis
+              {data?.summary.flaggedWeeksCount || 3} pekan kritis
             </span>
           </div>
 
@@ -94,29 +114,31 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Kartu 1: Pekan 8 */}
-            <WideWeekCard
-              weekNumber={8}
-              title="Ujian Tengah Semester & Tenggat Proyek Besar"
-              collisionCount={week8Metric?.collisionCount || 4}
-              loadIndex={week8Metric?.loadIndex || 16}
-              courses={week8Metric?.courses || ["IF2110", "IF2120", "IF2130", "IF2150"]}
-              recommendation="Optimal: geser Proyek Basis Data ke Pekan 9 agar Cw turun ke 3"
-              palette="koral"
-              illustrationType="laptop"
-            />
+            {card1 && (
+              <WideWeekCard
+                weekNumber={card1.weekNumber}
+                title={getWeekTitle(card1.weekNumber)}
+                collisionCount={card1.collisionCount}
+                loadIndex={card1.loadIndex}
+                courses={card1.courses || []}
+                recommendation={getRecommendation(card1.weekNumber)}
+                palette="koral"
+                illustrationType="laptop"
+              />
+            )}
 
-            {/* Kartu 2: Pekan 14 */}
-            <WideWeekCard
-              weekNumber={14}
-              title="Tenggat Proyek Akhir Semester"
-              collisionCount={week14Metric?.collisionCount || 3}
-              loadIndex={week14Metric?.loadIndex || 14}
-              courses={week14Metric?.courses || ["IF2110", "IF2120", "IF2160"]}
-              recommendation="Optimal: geser Proyek AI ke Pekan 15 agar Cw turun ke 2"
-              palette="pasir"
-              illustrationType="notebook"
-            />
+            {card2 && (
+              <WideWeekCard
+                weekNumber={card2.weekNumber}
+                title={getWeekTitle(card2.weekNumber)}
+                collisionCount={card2.collisionCount}
+                loadIndex={card2.loadIndex}
+                courses={card2.courses || []}
+                recommendation={getRecommendation(card2.weekNumber)}
+                palette="pasir"
+                illustrationType="notebook"
+              />
+            )}
           </div>
         )}
       </section>
@@ -129,7 +151,7 @@ export default function HomePage() {
               Semua Pekan
             </h3>
             <span className="text-xs text-cw-faint">
-              (Semester Ganjil 2026/2027)
+              (Semester Genap 2026/2027)
             </span>
           </div>
         </div>
@@ -141,7 +163,10 @@ export default function HomePage() {
             ))}
           </div>
         ) : (
-          <HeatMapGrid metrics={data?.metrics || []} onOpenSolverModal={openSolverModal} />
+          <HeatMapGrid
+            metrics={data?.metrics || []}
+            onOpenSolverModal={openSolverModal}
+          />
         )}
       </section>
     </div>

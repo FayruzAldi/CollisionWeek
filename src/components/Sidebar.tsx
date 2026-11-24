@@ -31,14 +31,14 @@ export function Sidebar({
 
   const navItems = [
     { href: "/", label: "Peta Beban", icon: LayoutDashboard },
-    { href: "/weeks/8", label: "Pekan Kritis", icon: CalendarDays, badge: 2 },
+    { href: "/weeks/10", label: "Pekan Kritis", icon: CalendarDays, badge: 3 },
     { href: "/help", label: "Bantuan Sebaya", icon: Users },
     { href: "/analytics", label: "Analitik Dosen", icon: BarChart3 },
     { href: "/import", label: "Impor Jadwal", icon: Upload },
   ];
 
   const favorites = [
-    { href: "/weeks/8", label: "Pekan 8" },
+    { href: "/weeks/10", label: "Pekan 10" },
     { href: "/weeks/14", label: "Pekan 14" },
     { href: "/help", label: "Bantuan Saya" },
   ];

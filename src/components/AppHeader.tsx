@@ -20,7 +20,7 @@ export function AppHeader({
 
   const navTabs = [
     { href: "/", label: "Dasbor" },
-    { href: "/weeks/8", label: "Pekan" },
+    { href: "/weeks/10", label: "Pekan" },
     { href: "/help", label: "Bantuan" },
     { href: "/analytics", label: "Analitik" },
     { href: "/import", label: "Impor" },

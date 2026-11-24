@@ -115,7 +115,7 @@ export default function WeekInspectorPage() {
 
             {Array.from({ length: 16 }, (_, i) => i + 1).map((w) => {
               const isCurrent = w === weekNumber;
-              const isCriticalWeek = w === 8 || w === 14;
+              const isCriticalWeek = w === 6 || w === 10 || w === 14;
 
               return (
                 <button

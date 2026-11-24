@@ -43,7 +43,20 @@ export default function LecturerAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [courseFilter, setCourseFilter] = useState("all");
+  const [coursesList, setCoursesList] = useState<any[]>([]);
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch("/api/courses");
+      if (res.ok) {
+        const json = await res.json();
+        setCoursesList(json.courses || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat mata kuliah:", err);
+    }
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -63,6 +76,10 @@ export default function LecturerAnalyticsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
@@ -93,12 +110,11 @@ export default function LecturerAnalyticsPage() {
           className="text-xs rounded-xl bg-cw-surface border border-cw-line px-3 py-1.5 text-cw-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cw-accent/40 self-start sm:self-auto"
         >
           <option value="all">Semua matkul</option>
-          <option value="IF2110">IF2110 · Sistem Basis Data</option>
-          <option value="IF2120">IF2120 · Rekayasa Perangkat Lunak</option>
-          <option value="IF2130">IF2130 · Jaringan Komputer</option>
-          <option value="IF2140">IF2140 · Desain &amp; Analisis Algoritma</option>
-          <option value="IF2150">IF2150 · Sistem Operasi</option>
-          <option value="IF2160">IF2160 · Kecerdasan Buatan</option>
+          {coursesList.map((c) => (
+            <option key={c.courseCode} value={c.courseCode}>
+              {c.courseCode} · {c.courseName}
+            </option>
+          ))}
         </select>
       </div>
 
