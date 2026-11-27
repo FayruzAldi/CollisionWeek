@@ -21,13 +21,13 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [assignmentOptions, setAssignmentOptions] = useState<any[]>([]);
 
-  // Fetch sample assignments for quick help request (scoped to logged-in user's prodi)
+  // Fetch all semester assignments for quick help request (scoped to logged-in user's prodi)
   React.useEffect(() => {
     if (!currentUser) {
       setAssignmentOptions([]);
       return;
     }
-    fetch("/api/weeks/10")
+    fetch("/api/assignments")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.assignments) setAssignmentOptions(d.assignments);

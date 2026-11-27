@@ -78,6 +78,12 @@ export async function GET(
       return {
         ...r,
         isUrgent,
+        assignment: {
+          id: assignment.id,
+          title: assignment.title,
+          weekNumber: assignment.weekNumber,
+          course: assignment.course,
+        },
       };
     });
 

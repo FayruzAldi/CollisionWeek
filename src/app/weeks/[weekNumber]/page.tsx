@@ -85,7 +85,14 @@ export default function WeekInspectorPage() {
       const res = await fetch(`/api/assignments/${assignmentId}/help`);
       if (res.ok) {
         const json = await res.json();
-        setAssignmentHelpRequests(json.helpRequests || []);
+        const list: HelpRequestData[] = (json.helpRequests || []).map((h: HelpRequestData) => ({
+          ...h,
+          assignment: h.assignment || json.assignment,
+        }));
+        setAssignmentHelpRequests(list);
+        setSelectedHelpRequest((prev) =>
+          prev ? list.find((h) => h.id === prev.id) ?? prev : null
+        );
       }
     } catch {
       setAssignmentHelpRequests([]);

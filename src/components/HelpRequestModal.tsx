@@ -36,8 +36,14 @@ export function HelpRequestModal({
 }: HelpRequestModalProps) {
   const { currentUser } = useRole();
 
+  const [fetchedAssignments, setFetchedAssignments] = useState<AssignmentOption[]>([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+
+  const effectiveAssignments =
+    assignments.length > 0 ? assignments : fetchedAssignments;
+
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>(
-    preselectedAssignmentId || assignments[0]?.id || ""
+    preselectedAssignmentId || effectiveAssignments[0]?.id || ""
   );
   const [selectedSubtopic, setSelectedSubtopic] = useState<string>(
     preselectedSubtopic || ""
@@ -47,15 +53,57 @@ export function HelpRequestModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const activeAssignment = assignments.find((a) => a.id === selectedAssignmentId);
+  const activeAssignment = effectiveAssignments.find(
+    (a) => a.id === selectedAssignmentId
+  );
 
   useEffect(() => {
-    if (selectedAssignmentId) return;
-    const initialAssignmentId =
-      assignments.find((assignment) => assignment.id === preselectedAssignmentId)?.id ??
-      assignments[0]?.id;
-    if (initialAssignmentId) setSelectedAssignmentId(initialAssignmentId);
-  }, [assignments, preselectedAssignmentId, selectedAssignmentId]);
+    if (!isOpen || assignments.length > 0) return;
+    let active = true;
+    setLoadingAssignments(true);
+    fetch("/api/assignments")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d?.assignments) {
+          setFetchedAssignments(d.assignments);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoadingAssignments(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, assignments.length, currentUser?.id]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    if (preselectedSubtopic) {
+      setSelectedSubtopic(preselectedSubtopic);
+      setCustomSubtopic("");
+    }
+    if (
+      preselectedAssignmentId &&
+      effectiveAssignments.some((a) => a.id === preselectedAssignmentId)
+    ) {
+      setSelectedAssignmentId(preselectedAssignmentId);
+      return;
+    }
+    if (
+      !selectedAssignmentId ||
+      !effectiveAssignments.some((a) => a.id === selectedAssignmentId)
+    ) {
+      setSelectedAssignmentId(effectiveAssignments[0]?.id || "");
+    }
+  }, [
+    isOpen,
+    effectiveAssignments,
+    preselectedAssignmentId,
+    preselectedSubtopic,
+    selectedAssignmentId,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,8 +172,11 @@ export function HelpRequestModal({
               setSelectedAssignmentId(assignmentId);
               setSelectedSubtopic("");
             }}
+            placeholder={
+              loadingAssignments ? "Memuat daftar tugas..." : "Pilih tugas..."
+            }
             className="w-full"
-            options={assignments.map((assignment) => ({
+            options={effectiveAssignments.map((assignment) => ({
               value: assignment.id,
               label: `[${assignment.courseCode}] ${assignment.title} (Pekan ${assignment.weekNumber})`,
             }))}

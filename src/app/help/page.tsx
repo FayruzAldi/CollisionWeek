@@ -21,6 +21,7 @@ import { CardSkeleton } from "@/components/ui/Skeleton";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { useRole } from "@/context/RoleContext";
 import {
   Search,
   Plus,
@@ -56,6 +57,7 @@ export default function PeerHelpBoardPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [assignmentOptions, setAssignmentOptions] = useState<any[]>([]);
   const { showToast } = useToast();
+  const { currentUser } = useRole();
 
   const fetchHelpRequests = async () => {
     try {
@@ -86,10 +88,10 @@ export default function PeerHelpBoardPage() {
         setCourses(cData.courses || []);
       }
 
-      const week8Res = await fetch("/api/weeks/8");
-      if (week8Res.ok) {
-        const wData = await week8Res.json();
-        setAssignmentOptions(wData.assignments || []);
+      const assignmentsRes = await fetch("/api/assignments");
+      if (assignmentsRes.ok) {
+        const aData = await assignmentsRes.json();
+        setAssignmentOptions(aData.assignments || []);
       }
     } catch (err) {
       console.error("Gagal memuat data pendukung:", err);
@@ -98,7 +100,7 @@ export default function PeerHelpBoardPage() {
 
   useEffect(() => {
     fetchCoursesAndAssignments();
-  }, []);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     fetchHelpRequests();

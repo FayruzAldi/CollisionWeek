@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tugas tidak ditemukan." }, { status: 404 });
     }
 
-    if (assignment.course.programId !== user.programId) {
+    if (user.role !== "ADMIN" && assignment.course.programId !== user.programId) {
       return NextResponse.json(
         { error: "Tugas ini bukan bagian dari program studi kamu." },
         { status: 403 }

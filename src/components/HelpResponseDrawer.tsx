@@ -129,6 +129,10 @@ export function HelpResponseDrawer({
   };
 
   const isResolved = request.status === "RESOLVED";
+  const responses = request.responses || [];
+  const requesterName = request.requester?.name || "Mahasiswa";
+  const courseCode = request.assignment?.course?.courseCode;
+  const assignmentTitle = request.assignment?.title || "Detail Bantuan Tugas";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-cw-ink/40 backdrop-blur-[2px]">
@@ -137,7 +141,7 @@ export function HelpResponseDrawer({
         <div className="p-5 border-b border-cw-line flex items-start justify-between sticky top-0 bg-cw-surface z-10">
           <div className="space-y-1 pr-6">
             <div className="flex flex-wrap items-center gap-1.5">
-              <Tag>{request.assignment.course.courseCode}</Tag>
+              {courseCode && <Tag>{courseCode}</Tag>}
               <Tag>#{request.subtopicLabel}</Tag>
               {request.isUrgent && (
                 <Badge variant="danger" shape="pill">
@@ -152,17 +156,17 @@ export function HelpResponseDrawer({
               </Badge>
             </div>
             <h3 className="font-semibold text-cw-ink text-base">
-              {request.assignment.title}
+              {assignmentTitle}
             </h3>
             <div className="flex items-center gap-1.5 text-xs text-cw-faint pt-0.5">
               <UserAvatar
-                src={request.requester.avatarUrl}
-                name={request.requester.name}
+                src={request.requester?.avatarUrl}
+                name={requesterName}
                 size="xs"
                 shape="circle"
               />
               <span>
-                Ditanyakan {request.requester.name} · {formatDateTime(request.createdAt)}
+                Ditanyakan {requesterName} · {formatDateTime(request.createdAt)}
               </span>
             </div>
           </div>
@@ -219,22 +223,23 @@ export function HelpResponseDrawer({
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-1">
               <h4 className="text-xs font-semibold text-cw-ink">
-                Tanggapan ({request.responses.length})
+                Tanggapan ({responses.length})
               </h4>
             </div>
 
-            {request.responses.length === 0 ? (
+            {responses.length === 0 ? (
               <div className="text-center py-8 text-cw-faint bg-cw-subtle rounded-xl border border-dashed border-cw-line">
                 <p className="text-xs font-medium text-cw-muted">Belum ada tanggapan.</p>
                 <p className="text-[11px] text-cw-faint mt-0.5">
-                  Jadilah yang pertama membantu {request.requester.name}.
+                  Jadilah yang pertama membantu {requesterName}.
                 </p>
               </div>
             ) : (
-              request.responses.map((resp) => {
+              responses.map((resp) => {
                 const isWritten = resp.responseType === "WRITTEN";
                 const isRecorded = resp.responseType === "RECORDED_LINK";
                 const isSession = resp.responseType === "SESSION_20MIN";
+                const helperName = resp.helper?.name || "Rekan";
 
                 return (
                   <div
@@ -244,16 +249,16 @@ export function HelpResponseDrawer({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <UserAvatar
-                          src={resp.helper.avatarUrl}
-                          name={resp.helper.name}
+                          src={resp.helper?.avatarUrl}
+                          name={helperName}
                           size="xs"
                           shape="circle"
                         />
                         <span className="font-semibold text-cw-ink">
-                          {resp.helper.name}
+                          {helperName}
                         </span>
                         <span className="text-[11px] text-cw-faint">
-                          ({resp.helper.role === "LECTURER" ? "Dosen" : "Mahasiswa"})
+                          ({resp.helper?.role === "LECTURER" ? "Dosen" : "Mahasiswa"})
                         </span>
                       </div>
                       <span className="text-[11px] text-cw-faint">
