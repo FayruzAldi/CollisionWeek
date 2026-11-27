@@ -1,11 +1,37 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { addDays } from "date-fns";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const program = await prisma.program.findFirst();
+    // Otorisasi: `dashboard.view`. Peta beban kelas tidak boleh dibaca anonim.
+    const { user } = await requireCapability("dashboard.view");
+
+    const { searchParams } = new URL(req.url);
+    const requestedProgramId = searchParams.get("programId");
+
+    // Hanya ADMIN yang boleh memilih prodi lain; mahasiswa & dosen terkunci ke prodinya sendiri.
+    const effectiveProgramId =
+      user.role === "ADMIN" && requestedProgramId
+        ? requestedProgramId
+        : user.programId;
+
+    const programs =
+      user.role === "ADMIN"
+        ? await prisma.program.findMany({
+            orderBy: { code: "asc" },
+            select: { id: true, code: true, name: true },
+          })
+        : [];
+
+    const program =
+      (effectiveProgramId
+        ? await prisma.program.findUnique({ where: { id: effectiveProgramId } })
+        : null) || (await prisma.program.findFirst());
     if (!program) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
@@ -16,7 +42,7 @@ export async function GET() {
       orderBy: { weekNumber: "asc" },
     });
 
-    // Also get assignment count breakdown per week
+    // Get assignment details with lecturer info, due dates
     const assignments = await prisma.assignment.findMany({
       where: { course: { programId: program.id } },
       select: {
@@ -24,15 +50,21 @@ export async function GET() {
         weekNumber: true,
         weightScore: true,
         courseId: true,
+        dueDate: true,
         course: {
           select: {
             courseCode: true,
             courseName: true,
             color: true,
+            lecturer: {
+              select: { id: true, name: true },
+            },
           },
         },
       },
     });
+
+    const semStart = new Date(program.semesterStartDate);
 
     const enrichedMetrics = metrics.map((m) => {
       const weekAssignments = assignments.filter((a) => a.weekNumber === m.weekNumber);
@@ -41,11 +73,43 @@ export async function GET() {
         new Set(weekAssignments.map((a) => a.course.courseCode))
       );
 
+      // Collect unique lecturer names for this week
+      const lecturerNames = Array.from(
+        new Set(
+          weekAssignments
+            .map((a) => a.course.lecturer?.name)
+            .filter(Boolean) as string[]
+        )
+      );
+
+      // Due date range
+      const dueDates = weekAssignments
+        .map((a) => a.dueDate)
+        .filter(Boolean)
+        .sort();
+      const dueDateRange =
+        dueDates.length > 0
+          ? {
+              earliest: dueDates[0].toISOString(),
+              latest: dueDates[dueDates.length - 1].toISOString(),
+            }
+          : null;
+
+      // Week calendar date range (Mon–Sun)
+      const weekStart = addDays(semStart, (m.weekNumber - 1) * 7);
+      const weekEnd = addDays(weekStart, 6);
+
       return {
         ...m,
         totalAssignments: weekAssignments.length,
         majorAssignmentsCount: majorAssignments.length,
         courses: uniqueCourses,
+        lecturerNames,
+        dueDateRange,
+        weekDateRange: {
+          start: weekStart.toISOString(),
+          end: weekEnd.toISOString(),
+        },
         assignmentsSummary: weekAssignments.map((a) => ({
           id: a.id,
           courseCode: a.course.courseCode,
@@ -63,6 +127,7 @@ export async function GET() {
         semesterStartDate: program.semesterStartDate,
         totalWeeks: program.totalWeeks,
       },
+      programs,
       metrics: enrichedMetrics,
       summary: {
         totalWeeks: program.totalWeeks,
@@ -74,6 +139,8 @@ export async function GET() {
       },
     });
   } catch (error) {
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
     console.error("Error fetching heatmap metrics:", error);
     return NextResponse.json(
       { error: "Failed to fetch heatmap metrics" },

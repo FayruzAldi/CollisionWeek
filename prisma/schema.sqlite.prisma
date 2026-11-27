@@ -34,6 +34,7 @@ model User {
   coursesTaught Course[]       @relation("LecturerCourses")
   helpRequests  HelpRequest[]  @relation("UserHelpRequests")
   helpResponses HelpResponse[] @relation("UserHelpResponses")
+  shiftRequests StudentShiftRequest[] @relation("UserShiftRequests")
 }
 
 model Course {
@@ -63,9 +64,10 @@ model Assignment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  course             Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course             Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
   dateMoveProposals  DateMoveProposal[]
   helpRequests       HelpRequest[]
+  shiftRequests      StudentShiftRequest[]
 }
 
 model WeeklyMetric {
@@ -124,4 +126,18 @@ model HelpResponse {
 
   request HelpRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   helper  User        @relation("UserHelpResponses", fields: [helperId], references: [id])
+}
+
+model StudentShiftRequest {
+  id           String   @id @default(uuid())
+  assignmentId String
+  studentId    String
+  originalWeek Int
+  proposedWeek Int
+  reason       String
+  status       String   @default("PENDING") // "PENDING" | "REVIEWED" | "APPROVED" | "DECLINED"
+  createdAt    DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation("UserShiftRequests", fields: [studentId], references: [id], onDelete: Cascade)
 }

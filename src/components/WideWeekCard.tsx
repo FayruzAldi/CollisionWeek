@@ -3,7 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { Calendar, ArrowRight } from "lucide-react";
-import { PastelIllustration, PastelPaletteName, IllustrationType } from "./PastelIllustrations";
+import {
+  PastelIllustration,
+  PastelPaletteName,
+  IllustrationType,
+  getTopicImage,
+} from "./PastelIllustrations";
 import { Button } from "./ui/Button";
 
 interface WideWeekCardProps {
@@ -15,6 +20,7 @@ interface WideWeekCardProps {
   recommendation: string;
   palette?: PastelPaletteName;
   illustrationType?: IllustrationType;
+  programQuery?: string;
 }
 
 export function WideWeekCard({
@@ -26,6 +32,7 @@ export function WideWeekCard({
   recommendation,
   palette = "koral",
   illustrationType = "laptop",
+  programQuery = "",
 }: WideWeekCardProps) {
   const isCritical = collisionCount >= 3;
   const loadPercentage = Math.min(Math.round((loadIndex / 20) * 100), 100);
@@ -33,10 +40,14 @@ export function WideWeekCard({
   return (
     <div className="cw-card p-4 sm:p-5 flex flex-col justify-between">
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* Banner Ilustrasi 176x112 rounded-xl */}
+        {/* Banner dengan foto materi */}
         <div className="w-full sm:w-44 h-28 rounded-xl relative overflow-hidden flex-shrink-0">
-          <PastelIllustration type={illustrationType} palette={palette} />
-          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-cw-ink/80 text-white text-[11px] font-medium backdrop-blur-sm">
+          <PastelIllustration
+            type={illustrationType}
+            palette={palette}
+            imageSrc={getTopicImage(courses.join(" "), weekNumber)}
+          />
+          <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-slate-900/75 text-white text-[11px] font-medium backdrop-blur-md">
             Pekan {weekNumber} · {courses.length} matkul
           </div>
         </div>
@@ -81,7 +92,7 @@ export function WideWeekCard({
             <span className="text-xs text-cw-faint">
               {isCritical ? "Beban mahasiswa menumpuk" : "Tenggat bertabrakan"}
             </span>
-            <Link href={`/weeks/${weekNumber}`}>
+            <Link href={`/weeks/${weekNumber}${programQuery}`}>
               <Button variant="outline" size="sm" type="button">
                 <span>Seimbangkan</span>
                 <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -97,7 +108,7 @@ export function WideWeekCard({
           {recommendation}
         </p>
         <Link
-          href={`/weeks/${weekNumber}`}
+          href={`/weeks/${weekNumber}${programQuery}`}
           className="font-semibold text-cw-accent hover:underline flex-shrink-0"
         >
           Terapkan →

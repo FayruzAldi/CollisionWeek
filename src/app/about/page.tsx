@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ShieldCheck,
   Github,
@@ -12,6 +13,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { CWMascot, UniversityLogos } from "@/components/UniversityAssets";
+import {
+  MASCOT_PERSONAS,
+  MascotCalloutBubble,
+  MascotDialogueShowcase,
+  MascotPersonaId,
+} from "@/components/MascotCommunicator";
 
 export default function AboutPage() {
   const teamMembers = [
@@ -90,6 +98,112 @@ export default function AboutPage() {
           </Button>
         </a>
       </div>
+
+      {/* Maskot & Ekosistem Kampus */}
+      <section className="cw-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <CWMascot mood="happy" size={72} className="flex-shrink-0" />
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-cw-ink">
+              Maskot &amp; Ekosistem Kampus Mitra
+            </h3>
+            <p className="text-xs text-cw-muted max-w-xl leading-relaxed">
+              Collision Week dirancang untuk membantu mahasiswa dan dosen lintas perguruan tinggi Indonesia mengelola puncak tenggat tugas agar lebih sehat dan kolaboratif.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <UniversityLogos layout="row" size="lg" variant="plain" />
+        </div>
+      </section>
+
+      {/* Maskot Komunikator Digital & Penjelasannya */}
+      <section className="space-y-5">
+        <div>
+          <h3 className="text-base font-semibold text-cw-ink">
+            Tim Maskot Digital &amp; Peran Komunikator
+          </h3>
+          <p className="text-xs text-cw-muted mt-0.5">
+            Tiga karakter maskot mitra kampus bertugas sebagai penyiar buletin, asisten penjadwalan, dan pendamping belajar sebaya di sepanjang aplikasi.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {(["umk", "binus", "telkom"] as MascotPersonaId[]).map((id) => {
+            const p = MASCOT_PERSONAS[id];
+            return (
+              <div key={id} className="cw-card p-5 space-y-4 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <MascotCalloutBubble text={p.callout} bgClass={p.calloutBg} />
+                      <div className="relative w-24 h-24">
+                        <Image
+                          src={`/mascots/${p.id}/${p.heroPose}`}
+                          alt={`${p.name} - ${p.campus}`}
+                          fill
+                          className="object-contain drop-shadow-[5px_5px_0_rgba(18,20,26,0.16)]"
+                          unoptimized
+                        />
+                      </div>
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <span
+                        className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${p.accentBg} ${p.accentText} ${p.accentBorder}`}
+                      >
+                        {p.roleBadge}
+                      </span>
+                      <h4 className="text-base font-semibold text-cw-ink truncate">
+                        {p.name}
+                      </h4>
+                      <p className="text-[11px] text-cw-faint truncate">{p.campus}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs font-medium text-cw-accent">{p.title}</p>
+                  <p className="text-xs text-cw-muted leading-relaxed">{p.description}</p>
+
+                  <ul className="space-y-1 pt-1">
+                    {p.duties.map((duty, dIdx) => (
+                      <li key={dIdx} className="text-[11px] text-cw-muted flex items-start gap-1.5">
+                        <span className="text-cw-accent font-bold">•</span>
+                        <span>{duty}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Galeri mini 4 ekspresi */}
+                <div className="pt-3 border-t border-cw-line space-y-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-cw-faint block">
+                    Ekspresi Utama
+                  </span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {p.poses.map((pose) => (
+                      <div key={pose.file} className="text-center space-y-1" title={pose.label}>
+                        <div className="relative aspect-square">
+                          <Image
+                            src={`/mascots/${p.id}/${pose.file}`}
+                            alt={`${p.name} ${pose.label}`}
+                            fill
+                            className="object-contain drop-shadow-[3px_3px_0_rgba(18,20,26,0.14)]"
+                            unoptimized
+                          />
+                        </div>
+                        <span className="text-[10px] text-cw-faint block truncate">
+                          {pose.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <MascotDialogueShowcase />
+      </section>
 
       {/* Validasi Empiris */}
       <section className="space-y-5">

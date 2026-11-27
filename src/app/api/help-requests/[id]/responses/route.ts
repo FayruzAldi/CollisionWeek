@@ -1,84 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
+const VALID_TYPES = ["WRITTEN", "RECORDED_LINK", "SESSION_20MIN"];
+
+/**
+ * Kirim tanggapan atas permintaan bantuan.
+ *
+ * Otorisasi: `help.respond` (semua peran yang sudah masuk). `helperId` dibaca
+ * dari sesi, bukan dari body, supaya tidak bisa menanggapi atas nama orang lain.
+ * Penanya sendiri tidak boleh menanggapi pertanyaannya.
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const requestId = params.id;
-    const body = await req.json();
-    const { helperId, responseType, contentOrUrl, scheduledSlot } = body;
+    const { user } = await requireCapability("help.respond");
 
-    if (!helperId || !responseType || !contentOrUrl) {
+    const body = await req.json();
+    const { responseType, contentOrUrl, scheduledSlot } = body;
+
+    if (!responseType || !contentOrUrl) {
       return NextResponse.json(
-        { error: "Missing required fields: helperId, responseType, contentOrUrl" },
+        { error: "responseType dan contentOrUrl wajib diisi." },
         { status: 400 }
       );
     }
 
-    if (!["WRITTEN", "RECORDED_LINK", "SESSION_20MIN"].includes(responseType)) {
+    if (!VALID_TYPES.includes(responseType)) {
       return NextResponse.json(
-        { error: "responseType must be WRITTEN, RECORDED_LINK, or SESSION_20MIN" },
+        { error: "responseType harus WRITTEN, RECORDED_LINK, atau SESSION_20MIN." },
         { status: 400 }
       );
     }
 
     const request = await prisma.helpRequest.findUnique({
-      where: { id: requestId },
+      where: { id: params.id },
       include: { responses: true },
     });
 
     if (!request) {
-      return NextResponse.json({ error: "Help request not found" }, { status: 404 });
+      return NextResponse.json({ error: "Permintaan tidak ditemukan." }, { status: 404 });
     }
 
-    // 1. Create response
+    if (request.requesterId === user.id) {
+      return NextResponse.json(
+        { error: "Kamu tidak dapat menanggapi pertanyaanmu sendiri." },
+        { status: 403 }
+      );
+    }
+
     const newResponse = await prisma.helpResponse.create({
       data: {
-        requestId,
-        helperId,
+        requestId: request.id,
+        helperId: user.id,
         responseType,
-        contentOrUrl: contentOrUrl.trim(),
+        contentOrUrl: String(contentOrUrl).trim(),
         scheduledSlot: scheduledSlot ? new Date(scheduledSlot) : null,
       },
       include: {
         helper: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatarUrl: true,
-            role: true,
-          },
+          select: { id: true, name: true, email: true, avatarUrl: true, role: true },
         },
       },
     });
 
-    // 2. Update request: record firstResponseAt if this is first response & set status = IN_PROGRESS
     const updateData: any = {
       status: request.status === "RESOLVED" ? "RESOLVED" : "IN_PROGRESS",
     };
-
     if (!request.firstResponseAt) {
       updateData.firstResponseAt = new Date();
     }
 
-    await prisma.helpRequest.update({
-      where: { id: requestId },
-      data: updateData,
-    });
+    await prisma.helpRequest.update({ where: { id: request.id }, data: updateData });
 
     return NextResponse.json({
       success: true,
-      message: "Help response delivered successfully!",
+      message: "Tanggapan terkirim.",
       response: newResponse,
     });
   } catch (error) {
-    console.error("Error creating help response:", error);
-    return NextResponse.json(
-      { error: "Failed to submit response" },
-      { status: 500 }
-    );
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
+    console.error("Gagal mengirim tanggapan:", error);
+    return NextResponse.json({ error: "Gagal mengirim tanggapan." }, { status: 500 });
   }
 }

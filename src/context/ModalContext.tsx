@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from "react";
 import { CreateContentModal } from "@/components/CreateContentModal";
 import { DeterministicSolverModal } from "@/components/DeterministicSolverModal";
 import { HelpRequestModal } from "@/components/HelpRequestModal";
+import { useRole } from "@/context/RoleContext";
 
 interface ModalContextType {
   openContentModal: () => void;
@@ -14,20 +15,25 @@ interface ModalContextType {
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
 
 export function ModalProvider({ children }: { children: React.ReactNode }) {
+  const { currentUser } = useRole();
   const [contentModalOpen, setContentModalOpen] = useState(false);
   const [solverModalOpen, setSolverModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [assignmentOptions, setAssignmentOptions] = useState<any[]>([]);
 
-  // Fetch sample assignments for quick help request
+  // Fetch sample assignments for quick help request (scoped to logged-in user's prodi)
   React.useEffect(() => {
-    fetch("/api/weeks/8")
-      .then((r) => r.json())
+    if (!currentUser) {
+      setAssignmentOptions([]);
+      return;
+    }
+    fetch("/api/weeks/10")
+      .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d.assignments) setAssignmentOptions(d.assignments);
+        if (d?.assignments) setAssignmentOptions(d.assignments);
       })
       .catch(() => {});
-  }, []);
+  }, [currentUser?.id]);
 
   return (
     <ModalContext.Provider

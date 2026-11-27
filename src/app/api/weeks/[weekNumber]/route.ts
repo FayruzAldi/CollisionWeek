@@ -5,18 +5,34 @@ import {
   AssignmentMetricInput,
 } from "@/lib/calculator";
 import { parseSubtopics } from "@/lib/utils";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { weekNumber: string } }
 ) {
   try {
+    // Otorisasi: `week.view` (semua peran yang sudah masuk).
+    const { user } = await requireCapability("week.view");
+
     const weekNumber = parseInt(params.weekNumber, 10);
     if (isNaN(weekNumber) || weekNumber < 1 || weekNumber > 16) {
       return NextResponse.json({ error: "Invalid week number" }, { status: 400 });
     }
 
-    const program = await prisma.program.findFirst();
+    const { searchParams } = new URL(req.url);
+    const requestedProgramId = searchParams.get("programId");
+    // Hanya ADMIN yang boleh melihat prodi lain; mahasiswa & dosen terkunci ke prodinya sendiri.
+    const effectiveProgramId =
+      user.role === "ADMIN" && requestedProgramId
+        ? requestedProgramId
+        : user.programId;
+
+    const program =
+      (effectiveProgramId
+        ? await prisma.program.findUnique({ where: { id: effectiveProgramId } })
+        : null) || (await prisma.program.findFirst());
     if (!program) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
@@ -94,7 +110,19 @@ export async function GET(
     }));
 
     // Find deterministic candidates if flagged (or to alleviate load)
-    const candidates = findMinimalDateMoveCandidates(metricInputs, weekNumber, program.totalWeeks);
+    const assignmentById = new Map(allAssignments.map((a) => [a.id, a]));
+    const candidates = findMinimalDateMoveCandidates(
+      metricInputs,
+      weekNumber,
+      program.totalWeeks
+    ).map((c) => {
+      const a = assignmentById.get(c.assignmentId);
+      return {
+        ...c,
+        lecturerId: a?.course.lecturer.id,
+        lecturerName: a?.course.lecturer.name,
+      };
+    });
 
     // Fetch saved proposals from DB for this week
     const savedProposals = await prisma.dateMoveProposal.findMany({
@@ -123,6 +151,7 @@ export async function GET(
         courseCode: a.course.courseCode,
         courseName: a.course.courseName,
         courseColor: a.course.color,
+        lecturerId: a.course.lecturer.id,
         lecturerName: a.course.lecturer.name,
         title: a.title,
         type: a.type,
@@ -139,6 +168,8 @@ export async function GET(
       savedProposals,
     });
   } catch (error) {
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
     console.error("Error fetching week details:", error);
     return NextResponse.json(
       { error: "Failed to fetch week details" },

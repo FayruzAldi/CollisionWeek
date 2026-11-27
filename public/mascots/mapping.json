@@ -1,0 +1,57 @@
+{
+ "source": {
+  "binus": "bot-gold",
+  "telkom": "bot-white",
+  "umk": "eagle"
+ },
+ "map": {
+  "binus": {
+   "1": "stress",
+   "2": "working",
+   "3": "calculating",
+   "4": "collision",
+   "5": "resolved",
+   "6": "sharing",
+   "7": "cheer",
+   "8": "success",
+   "9": "reading",
+   "10": "peer-help"
+  },
+  "telkom": {
+   "1": "stress",
+   "2": "working",
+   "3": "calculating",
+   "4": "collision",
+   "5": "resolved",
+   "6": "sharing",
+   "7": "cheer",
+   "8": "success",
+   "9": "reading",
+   "10": "peer-help"
+  },
+  "umk": {
+   "1": "stress",
+   "2": "working",
+   "3": "calculating",
+   "4": "collision",
+   "5": "peer-help",
+   "6": "sharing",
+   "7": "cheer",
+   "10": "success",
+   "9": "reading",
+   "8": "resolved"
+  }
+ },
+ "beats": [
+  "stress",
+  "working",
+  "calculating",
+  "collision",
+  "resolved",
+  "sharing",
+  "cheer",
+  "success",
+  "reading",
+  "peer-help"
+ ]
+}

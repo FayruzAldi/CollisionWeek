@@ -11,9 +11,10 @@ import { Button } from "./ui/Button";
 interface HeatMapGridProps {
   metrics: WeekMetricItem[];
   onOpenSolverModal?: () => void;
+  programQuery?: string;
 }
 
-export function HeatMapGrid({ metrics }: HeatMapGridProps) {
+export function HeatMapGrid({ metrics, programQuery = "" }: HeatMapGridProps) {
   const [filter, setFilter] = useState<FilterStatus>("ALL");
   const [sort, setSort] = useState<SortOption>("WEEK");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -87,9 +88,9 @@ export function HeatMapGrid({ metrics }: HeatMapGridProps) {
           }}
         />
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
           {filtered.map((item) => (
-            <WeekCard key={item.weekNumber} item={item} maxLoad={maxLoad} />
+            <WeekCard key={item.weekNumber} item={item} maxLoad={maxLoad} programQuery={programQuery} />
           ))}
         </div>
       ) : (
@@ -121,7 +122,7 @@ export function HeatMapGrid({ metrics }: HeatMapGridProps) {
                       Jadwal Pekan {item.weekNumber}
                     </h4>
                     <p className="text-xs text-cw-muted mt-0.5">
-                      {item.courses.join(", ") || "Tidak ada matkul"} — {item.totalAssignments} tugas
+                      {item.courses.join(", ") || "Tidak ada matkul"} · {item.totalAssignments} tugas
                     </p>
                   </div>
                 </div>
@@ -149,7 +150,7 @@ export function HeatMapGrid({ metrics }: HeatMapGridProps) {
                     </span>
                   </div>
 
-                  <Link href={`/weeks/${item.weekNumber}`}>
+                  <Link href={`/weeks/${item.weekNumber}${programQuery}`}>
                     <Button variant={isCollision ? "primary" : "outline"} size="sm" type="button">
                       {isCollision ? "Seimbangkan" : "Lihat"}
                     </Button>

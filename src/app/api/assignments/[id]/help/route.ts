@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseSubtopics, isMoreThan12HoursOld } from "@/lib/utils";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Otorisasi: `help.view`. Isi tiket bantuan memuat nama dan email.
+    await requireCapability("help.view");
+
     const assignmentId = params.id;
 
     const assignment = await prisma.assignment.findUnique({
@@ -91,6 +96,8 @@ export async function GET(
       helpRequests: enrichedRequests,
     });
   } catch (error) {
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
     console.error("Error fetching assignment help:", error);
     return NextResponse.json(
       { error: "Failed to fetch assignment help requests" },

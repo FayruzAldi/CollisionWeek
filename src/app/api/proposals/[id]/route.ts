@@ -1,38 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { computeAllWeeklyMetrics, AssignmentMetricInput } from "@/lib/calculator";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
+/**
+ * Terapkan atau tolak usulan pergeseran tanggal.
+ *
+ * Otorisasi: `schedule.move` (dosen/admin). Sebelumnya route ini terbuka, jadi
+ * mahasiswa bisa memindahkan tenggat seluruh kelas hanya dengan memanggil API.
+ */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user } = await requireCapability("schedule.move");
+
     const proposalId = params.id;
     const body = await req.json();
     const action = body.action as "ACCEPT" | "REJECT";
 
     if (!action || !["ACCEPT", "REJECT"].includes(action)) {
       return NextResponse.json(
-        { error: "Action must be ACCEPT or REJECT" },
+        { error: "Action harus ACCEPT atau REJECT" },
         { status: 400 }
       );
     }
 
-    // Check if proposal exists in database or is passed as candidate payload
     let proposal = await prisma.dateMoveProposal.findUnique({
       where: { id: proposalId },
-      include: {
-        assignment: {
-          include: {
-            course: true,
-          },
-        },
-      },
+      include: { assignment: { include: { course: true } } },
     });
 
-    // If proposalId is a generated candidate ID, create it in DB first
+    // Kalau yang dikirim adalah kandidat yang belum tersimpan, simpan dulu.
     if (!proposal && body.candidate) {
       const candidate = body.candidate;
+      const assignment = await prisma.assignment.findUnique({
+        where: { id: candidate.assignmentId },
+        include: { course: true },
+      });
+      if (!assignment) {
+        return NextResponse.json({ error: "Tugas tidak ditemukan." }, { status: 404 });
+      }
       proposal = await prisma.dateMoveProposal.create({
         data: {
           assignmentId: candidate.assignmentId,
@@ -42,18 +52,34 @@ export async function PATCH(
           loadReductionDelta: candidate.loadReductionDelta,
           status: "PENDING",
         },
-        include: {
-          assignment: {
-            include: {
-              course: true,
-            },
-          },
-        },
+        include: { assignment: { include: { course: true } } },
       });
     }
 
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return NextResponse.json({ error: "Usulan tidak ditemukan." }, { status: 404 });
+    }
+
+    // Dosen hanya boleh mengubah jadwal tugas pada mata kuliah yang diampunya sendiri.
+    // Hanya ADMIN yang dapat menggeser jadwal lintas dosen.
+    if (
+      user.role === "LECTURER" &&
+      proposal.assignment.course.lecturerId !== user.id
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Anda hanya dapat menggeser jadwal tugas pada mata kuliah yang Anda ampu.",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (proposal.status === "ACCEPTED") {
+      return NextResponse.json(
+        { error: "Usulan ini sudah diterapkan sebelumnya." },
+        { status: 409 }
+      );
     }
 
     if (action === "REJECT") {
@@ -64,12 +90,10 @@ export async function PATCH(
       return NextResponse.json({
         success: true,
         proposal: updatedProposal,
-        message: "Proposal was rejected.",
+        message: "Usulan pergeseran ditolak.",
       });
     }
 
-    // Action is ACCEPT:
-    // 1. Update the assignment's due date and week number
     const updatedAssignment = await prisma.assignment.update({
       where: { id: proposal.assignmentId },
       data: {
@@ -78,13 +102,11 @@ export async function PATCH(
       },
     });
 
-    // 2. Mark proposal as ACCEPTED
     const updatedProposal = await prisma.dateMoveProposal.update({
       where: { id: proposal.id },
       data: { status: "ACCEPTED" },
     });
 
-    // 3. Recalculate all weekly metrics in DB
     const programId = proposal.assignment.course.programId;
     const allAssignments = await prisma.assignment.findMany({
       where: { course: { programId } },
@@ -103,12 +125,7 @@ export async function PATCH(
 
     for (const [weekNum, computed] of Array.from(computedMetricsMap.entries())) {
       await prisma.weeklyMetric.upsert({
-        where: {
-          programId_weekNumber: {
-            programId,
-            weekNumber: weekNum,
-          },
-        },
+        where: { programId_weekNumber: { programId, weekNumber: weekNum } },
         create: {
           programId,
           weekNumber: weekNum,
@@ -127,14 +144,17 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: `Date shift approved! Moved assignment to Week ${proposal.proposedWeek}. Weekly metrics recalculated.`,
+      message: `Pergeseran diterapkan. Tugas dipindah ke Pekan ${proposal.proposedWeek}.`,
       proposal: updatedProposal,
       assignment: updatedAssignment,
+      appliedBy: { id: user.id, name: user.name, role: user.role },
     });
   } catch (error) {
-    console.error("Error updating proposal:", error);
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
+    console.error("Gagal memproses usulan:", error);
     return NextResponse.json(
-      { error: "Failed to process date move proposal" },
+      { error: "Gagal memproses usulan pergeseran." },
       { status: 500 }
     );
   }

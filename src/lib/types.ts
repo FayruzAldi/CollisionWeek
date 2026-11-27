@@ -23,6 +23,11 @@ export interface UserProfile {
   role: UserRole;
   avatarUrl?: string | null;
   programId: string;
+  program?: {
+    id: string;
+    code: string;
+    name: string;
+  };
 }
 
 export interface CourseData {
@@ -75,6 +80,8 @@ export interface DateMoveProposalCandidate {
   assignmentId: string;
   assignmentTitle: string;
   courseCode: string;
+  lecturerId?: string;
+  lecturerName?: string;
   originalWeek: number;
   proposedWeek: number;
   originalDueDate: string;

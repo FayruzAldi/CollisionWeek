@@ -16,6 +16,7 @@ import { Button } from "./ui/Button";
 import { Tag } from "./ui/Tag";
 import { Badge } from "./ui/Badge";
 import { useToast } from "./ui/Toast";
+import { UserAvatar } from "./ui/UserAvatar";
 
 interface HelpResponseDrawerProps {
   request: HelpRequestData | null;
@@ -102,7 +103,6 @@ export function HelpResponseDrawer({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          helperId: currentUser?.id,
           responseType: activeTab,
           contentOrUrl,
           scheduledSlot,
@@ -154,9 +154,17 @@ export function HelpResponseDrawer({
             <h3 className="font-semibold text-cw-ink text-base">
               {request.assignment.title}
             </h3>
-            <p className="text-xs text-cw-faint">
-              Ditanyakan {request.requester.name} · {formatDateTime(request.createdAt)}
-            </p>
+            <div className="flex items-center gap-1.5 text-xs text-cw-faint pt-0.5">
+              <UserAvatar
+                src={request.requester.avatarUrl}
+                name={request.requester.name}
+                size="xs"
+                shape="circle"
+              />
+              <span>
+                Ditanyakan {request.requester.name} · {formatDateTime(request.createdAt)}
+              </span>
+            </div>
           </div>
 
           <button
@@ -235,9 +243,12 @@ export function HelpResponseDrawer({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-cw-sunken flex items-center justify-center font-semibold text-[11px] text-cw-ink">
-                          {resp.helper.name.charAt(0)}
-                        </div>
+                        <UserAvatar
+                          src={resp.helper.avatarUrl}
+                          name={resp.helper.name}
+                          size="xs"
+                          shape="circle"
+                        />
                         <span className="font-semibold text-cw-ink">
                           {resp.helper.name}
                         </span>
@@ -252,38 +263,92 @@ export function HelpResponseDrawer({
 
                     <div className="text-[13px] text-cw-muted leading-relaxed">
                       {isWritten && (
-                        <p className="whitespace-pre-wrap">{resp.contentOrUrl}</p>
+                        <div className="space-y-2">
+                          <p className="whitespace-pre-wrap">{resp.contentOrUrl}</p>
+                          {(() => {
+                            const match = resp.contentOrUrl.match(/https?:\/\/[^\s]+/);
+                            if (!match) return null;
+                            return (
+                              <a
+                                href={match[0]}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cw-subtle border border-cw-line text-xs text-cw-accent hover:underline font-medium break-all"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                <span>Buka referensi materi</span>
+                              </a>
+                            );
+                          })()}
+                        </div>
                       )}
 
-                      {isRecorded && (
-                        <div className="space-y-1">
-                          <a
-                            href={resp.contentOrUrl.split("\n")[0]}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs text-cw-accent hover:underline font-medium break-all"
-                          >
-                            <Video className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
-                            <span>Buka tautan rekaman</span>
-                            <ExternalLink className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} />
-                          </a>
-                          {resp.contentOrUrl.includes("\n") && (
-                            <p className="text-xs text-cw-faint">
-                              {resp.contentOrUrl.split("\n").slice(1).join("\n")}
+                      {isRecorded && (() => {
+                        const lines = resp.contentOrUrl.split("\n").map((l) => l.trim()).filter(Boolean);
+                        const videoUrl = lines[0] || "";
+                        const notes = lines.slice(1).join("\n");
+                        const platform = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")
+                          ? "YouTube"
+                          : videoUrl.includes("loom.com")
+                          ? "Loom Video"
+                          : videoUrl.includes("drive.google.com")
+                          ? "Google Drive"
+                          : "Tautan Materi";
+
+                        return (
+                          <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/80 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-800">
+                                <Video className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" strokeWidth={1.75} />
+                                <span>{platform}</span>
+                              </span>
+                              <a
+                                href={videoUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-700 transition-colors"
+                              >
+                                <span>Tonton / Buka</span>
+                                <ExternalLink className="w-3 h-3" strokeWidth={2} />
+                              </a>
+                            </div>
+                            <p className="text-[11px] text-indigo-700/80 break-all font-mono bg-white/70 px-2 py-1 rounded-md">
+                              {videoUrl}
                             </p>
-                          )}
-                        </div>
-                      )}
-
-                      {isSession && (
-                        <div className="p-2.5 rounded-lg bg-cw-subtle border border-cw-line space-y-1">
-                          <div className="flex items-center gap-1.5 text-cw-ink font-medium">
-                            <Clock className="w-3.5 h-3.5 text-cw-accent" strokeWidth={1.75} />
-                            <span>Sesi 20 menit diajukan</span>
+                            {notes && (
+                              <p className="text-xs text-cw-ink leading-relaxed whitespace-pre-wrap">
+                                {notes}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-xs text-cw-muted">{resp.contentOrUrl}</p>
-                        </div>
-                      )}
+                        );
+                      })()}
+
+                      {isSession && (() => {
+                        const urlMatch = resp.contentOrUrl.match(/https?:\/\/[^\s]+/);
+                        return (
+                          <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 text-amber-900 font-semibold text-xs">
+                                <Clock className="w-3.5 h-3.5 text-amber-600" strokeWidth={1.75} />
+                                <span>Sesi Bimbingan 20 Menit</span>
+                              </div>
+                              {urlMatch && (
+                                <a
+                                  href={urlMatch[0]}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 text-white text-[11px] font-semibold hover:bg-amber-700 transition-colors"
+                                >
+                                  <span>Gabung Sesi</span>
+                                  <ExternalLink className="w-3 h-3" strokeWidth={2} />
+                                </a>
+                              )}
+                            </div>
+                            <p className="text-xs text-cw-ink whitespace-pre-wrap">{resp.contentOrUrl}</p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

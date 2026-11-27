@@ -4,7 +4,13 @@ import React, { useEffect, useState } from "react";
 import { HelpRequestData } from "@/lib/types";
 import { HelpResponseDrawer } from "@/components/HelpResponseDrawer";
 import { HelpRequestModal } from "@/components/HelpRequestModal";
-import { PastelIllustration, PALETTE_LIST, IllustrationType } from "@/components/PastelIllustrations";
+import {
+  PastelIllustration,
+  PALETTE_LIST,
+  IllustrationType,
+  getTopicImage,
+} from "@/components/PastelIllustrations";
+import { MascotBanner } from "@/components/MascotCommunicator";
 import { formatDateTime } from "@/lib/utils";
 import { Tag } from "@/components/ui/Tag";
 import { Badge } from "@/components/ui/Badge";
@@ -14,12 +20,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   Search,
   Plus,
   MessageSquare,
   ArrowRight,
   HelpCircle,
+  Video,
+  Clock,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 
 export default function PeerHelpBoardPage() {
@@ -119,6 +130,28 @@ export default function PeerHelpBoardPage() {
         </Button>
       </div>
 
+      {/* Maskot Companion: PUTI (Telkom) */}
+      <MascotBanner
+        persona="telkom"
+        callout={stats.needsHelpUrgent > 0 ? "BUTUH BANTUAN!" : "SALING BANTU!"}
+        pose={stats.needsHelpUrgent > 0 ? "peer-help.webp" : "sharing.webp"}
+        tone={stats.needsHelpUrgent > 0 ? "warning" : "default"}
+        headline={
+          stats.needsHelpUrgent > 0
+            ? `${stats.needsHelpUrgent} pertanyaan temanmu sudah menunggu lebih dari 12 jam`
+            : "Ruang belajar kolaboratif antar mahasiswa"
+        }
+        message={
+          stats.needsHelpUrgent > 0
+            ? "Punya catatan, tautan video tutorial, atau waktu 20 menit? Bantu mereka sekarang di papan diskusi."
+            : "Bagikan tautan video penjelasan, panduan tertulis, atau ajukan sesi 20 menit untuk sub-topik yang menantang."
+        }
+        actionLabel={stats.needsHelpUrgent > 0 ? "Filter mendesak" : "Minta bantuan"}
+        onActionClick={() =>
+          stats.needsHelpUrgent > 0 ? setActiveFilter("needs_help") : setIsModalOpen(true)
+        }
+      />
+
       {/* Toolbar Filter */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
@@ -186,7 +219,13 @@ export default function PeerHelpBoardPage() {
           {requests.map((r, i) => {
             const isResolved = r.status === "RESOLVED";
             const illType = illTypes[i % illTypes.length];
-            const palette = PALETTE_LIST[i % PALETTE_LIST.length];
+            const palette = isResolved ? "mint" : PALETTE_LIST[i % PALETTE_LIST.length];
+
+            const responses = r.responses || [];
+            const recordedResp = responses.find((resp) => resp.responseType === "RECORDED_LINK");
+            const hasSession = responses.some((resp) => resp.responseType === "SESSION_20MIN");
+            const hasWritten = responses.some((resp) => resp.responseType === "WRITTEN");
+            const recordedUrl = recordedResp?.contentOrUrl.split("\n")[0]?.trim();
 
             return (
               <div
@@ -198,28 +237,48 @@ export default function PeerHelpBoardPage() {
                 className="cw-card group overflow-hidden flex flex-col justify-between cursor-pointer"
               >
                 <div>
-                  {/* Banner Ilustrasi */}
-                  <div className="h-28 w-full relative overflow-hidden rounded-t-2xl">
-                    <PastelIllustration type={illType} palette={palette} />
+                  {/* Banner Foto Materi gaya Trenning (inset rounded-xl + frosted pill) */}
+                  <div className="p-2.5 pb-0">
+                    <div className="h-28 w-full relative overflow-hidden rounded-xl">
+                      <PastelIllustration
+                        type={illType}
+                        palette={palette}
+                        imageSrc={getTopicImage(
+                          `${r.assignment.course.courseCode} ${r.assignment.course.courseName} ${r.subtopicLabel}`,
+                          i
+                        )}
+                      />
 
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="bg-cw-ink/80 text-white text-[11px] font-medium px-2 py-0.5 rounded-md backdrop-blur-sm">
-                        {r.assignment.course.courseCode}
-                      </span>
-                    </div>
-
-                    {r.isUrgent && !isResolved && (
-                      <div className="absolute top-2.5 right-2.5">
-                        <Badge variant="danger" shape="pill">
-                          Butuh bantuan (&gt;12 jam)
-                        </Badge>
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        <span className="bg-slate-900/75 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md">
+                          {r.assignment.course.courseCode} · Pekan {r.assignment.weekNumber}
+                        </span>
                       </div>
-                    )}
+
+                      {r.isUrgent && !isResolved ? (
+                        <div className="absolute top-2.5 right-2.5">
+                          <Badge variant="danger" shape="pill">
+                            Butuh bantuan (&gt;12 jam)
+                          </Badge>
+                        </div>
+                      ) : isResolved ? (
+                        <div className="absolute top-2.5 right-2.5">
+                          <Badge variant="success" shape="pill">
+                            Selesai
+                          </Badge>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
 
                   {/* Badan Kartu */}
-                  <div className="p-4 space-y-3">
-                    <Tag>#{r.subtopicLabel}</Tag>
+                  <div className="p-4 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Tag>#{r.subtopicLabel}</Tag>
+                      <span className="text-[11px] text-cw-faint truncate">
+                        {r.assignment.course.courseName}
+                      </span>
+                    </div>
 
                     <h3 className="font-semibold text-cw-ink text-[15px] leading-snug line-clamp-1 group-hover:text-cw-accent transition-colors">
                       {r.assignment.title}
@@ -229,12 +288,56 @@ export default function PeerHelpBoardPage() {
                       {r.questionDetail}
                     </p>
 
+                    {/* Ringkasan format materi bantuan (Video / Sesi / Tulisan) */}
+                    {responses.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        {recordedResp && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-medium">
+                            <Video className="w-3 h-3" strokeWidth={1.75} />
+                            <span>Video / Tautan</span>
+                          </span>
+                        )}
+                        {hasSession && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-medium">
+                            <Clock className="w-3 h-3" strokeWidth={1.75} />
+                            <span>Sesi 20 Menit</span>
+                          </span>
+                        )}
+                        {hasWritten && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-medium">
+                            <FileText className="w-3 h-3" strokeWidth={1.75} />
+                            <span>Panduan Tulisan</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tautan video cepat jika tersedia */}
+                    {recordedUrl && recordedUrl.startsWith("http") && (
+                      <a
+                        href={recordedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-cw-subtle border border-cw-line text-[11px] text-cw-accent hover:bg-cw-accent-soft/50 transition-colors"
+                      >
+                        <span className="inline-flex items-center gap-1.5 font-medium truncate">
+                          <Video className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                          <span className="truncate">{recordedUrl}</span>
+                        </span>
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} />
+                      </a>
+                    )}
+
                     {/* Baris Meta */}
-                    <div className="pt-2 flex items-center justify-between text-xs">
+                    <div className="pt-1.5 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <div className="w-5 h-5 rounded-full bg-cw-accent-soft text-cw-accent flex items-center justify-center font-semibold text-[11px] flex-shrink-0">
-                          {r.requester.name.charAt(0)}
-                        </div>
+                        <UserAvatar
+                          src={r.requester.avatarUrl}
+                          name={r.requester.name}
+                          size="xs"
+                          shape="circle"
+                        />
                         <span className="text-xs text-cw-muted font-medium truncate max-w-[130px]">
                           {r.requester.name}
                         </span>
@@ -242,7 +345,7 @@ export default function PeerHelpBoardPage() {
 
                       <div className="flex items-center gap-1 text-xs text-cw-muted font-medium">
                         <MessageSquare className="w-3.5 h-3.5 text-cw-faint" strokeWidth={1.75} />
-                        <span>{r.responsesCount || r.responses?.length || 0} tanggapan</span>
+                        <span>{r.responsesCount || responses.length || 0} tanggapan</span>
                       </div>
                     </div>
                   </div>

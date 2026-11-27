@@ -82,7 +82,6 @@ export function HelpRequestModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assignmentId: selectedAssignmentId,
-          requesterId: currentUser?.id,
           subtopicLabel: subtopic,
           questionDetail: questionDetail.trim(),
         }),

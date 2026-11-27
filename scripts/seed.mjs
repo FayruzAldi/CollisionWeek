@@ -189,28 +189,44 @@ export async function runSeed() {
   });
   console.log(`✅ Created Program: ${program.name} (Semester Mulai: 2027-02-22)`);
 
+  const buildAvatarUrl = (name, role) => {
+    const bg =
+      role === "ADMIN"
+        ? "c0aede"
+        : role === "LECTURER"
+        ? "b6e3f4,d1d4f9"
+        : "b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf";
+    return `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=${bg}`;
+  };
+
   // 3. Create Admin
   await prisma.user.create({
     data: {
       programId: program.id,
       name: "Prof. Maya Arisanti",
-      email: "maya.arisanti@itb.ac.id",
+      email: "maya.arisanti@umk.ac.id",
       role: "ADMIN",
-      avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      avatarUrl: buildAvatarUrl("Prof. Maya Arisanti", "ADMIN"),
     },
   });
 
   // 4. Create Lecturers
   const lecturerMap = new Map();
   for (const l of lecturersData) {
-    const emailPrefix = l.name.toLowerCase().replace(/[^a-z]/g, "");
+    const cleanSlug = l.name
+      .toLowerCase()
+      .replace(/^(dr\.|prof\.|ir\.)\s*/g, "")
+      .replace(/,.*$/g, "")
+      .trim()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "");
     const user = await prisma.user.create({
       data: {
         programId: program.id,
         name: l.name,
-        email: `${emailPrefix || l.lecturer_id.toLowerCase()}@itb.ac.id`,
+        email: `${cleanSlug || l.lecturer_id.toLowerCase()}@umk.ac.id`,
         role: "LECTURER",
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(l.name)}`,
+        avatarUrl: buildAvatarUrl(l.name, "LECTURER"),
       },
     });
     lecturerMap.set(l.lecturer_id, user);
@@ -220,13 +236,18 @@ export async function runSeed() {
   // 5. Create Students (40 students S01..S40)
   const studentMap = new Map();
   for (const s of studentsData) {
+    const baseSlug = s.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "");
     const user = await prisma.user.create({
       data: {
         programId: program.id,
         name: s.name,
-        email: `${s.student_id.toLowerCase()}@mahasiswa.itb.ac.id`,
+        email: `${baseSlug}@std.umk.ac.id`,
         role: "STUDENT",
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(s.name)}`,
+        avatarUrl: buildAvatarUrl(s.name, "STUDENT"),
       },
     });
     studentMap.set(s.student_id, user);

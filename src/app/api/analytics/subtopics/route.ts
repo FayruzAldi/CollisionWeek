@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { differenceInHours } from "date-fns";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    // Otorisasi: `analytics.view` (dosen/admin).
+    const { user } = await requireCapability("analytics.view");
+
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("courseId");
 
     const where: any = {};
-    if (courseId && courseId !== "all") {
+    if (user.role !== "ADMIN") {
+      where.assignment = {
+        course: { programId: user.programId },
+        ...(courseId && courseId !== "all" ? { courseId } : {}),
+      };
+    } else if (courseId && courseId !== "all") {
       where.assignment = { courseId };
     }
 
@@ -165,6 +175,8 @@ export async function GET(req: NextRequest) {
       rankings: subtopicRankings,
     });
   } catch (error) {
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
     console.error("Error fetching subtopic analytics:", error);
     return NextResponse.json(
       { error: "Failed to fetch subtopic analytics" },

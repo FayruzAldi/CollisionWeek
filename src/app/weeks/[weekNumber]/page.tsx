@@ -2,18 +2,26 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { DateMoveSolver } from "@/components/DateMoveSolver";
 import { HelpRequestModal } from "@/components/HelpRequestModal";
-import { formatDate } from "@/lib/utils";
+import { HelpResponseDrawer } from "@/components/HelpResponseDrawer";
+import { formatDayDate } from "@/lib/utils";
+import { HelpRequestData } from "@/lib/types";
 import { Tag } from "@/components/ui/Tag";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useRole } from "@/context/RoleContext";
+import { PastelIllustration, getTopicImage } from "@/components/PastelIllustrations";
+import { MascotBanner } from "@/components/MascotCommunicator";
 import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Video,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 
 interface WeekDetailData {
@@ -33,19 +41,26 @@ interface WeekDetailData {
 export default function WeekInspectorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const programIdParam = searchParams.get("programId");
   const weekNumber = parseInt(params.weekNumber as string, 10) || 8;
   const { showToast } = useToast();
+  const { currentUser, role } = useRole();
 
   const [data, setData] = useState<WeekDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAssignmentIndex, setSelectedAssignmentIndex] = useState(0);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedAssignmentForHelp, setSelectedAssignmentForHelp] = useState<any | null>(null);
+  const [assignmentHelpRequests, setAssignmentHelpRequests] = useState<HelpRequestData[]>([]);
+  const [selectedHelpRequest, setSelectedHelpRequest] = useState<HelpRequestData | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchWeekData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/weeks/${weekNumber}`);
+      const q = programIdParam ? `?programId=${encodeURIComponent(programIdParam)}` : "";
+      const res = await fetch(`/api/weeks/${weekNumber}${q}`);
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -59,14 +74,34 @@ export default function WeekInspectorPage() {
 
   useEffect(() => {
     fetchWeekData();
-  }, [weekNumber]);
+  }, [weekNumber, programIdParam, currentUser?.id]);
 
   const isCollision = (data?.metric.collisionCount ?? 0) >= 3;
   const isCaution = (data?.metric.collisionCount ?? 0) === 2;
   const activeAssignment = data?.assignments[selectedAssignmentIndex] || data?.assignments[0];
 
+  const fetchAssignmentHelp = async (assignmentId: string) => {
+    try {
+      const res = await fetch(`/api/assignments/${assignmentId}/help`);
+      if (res.ok) {
+        const json = await res.json();
+        setAssignmentHelpRequests(json.helpRequests || []);
+      }
+    } catch {
+      setAssignmentHelpRequests([]);
+    }
+  };
+
+  useEffect(() => {
+    if (activeAssignment?.id) {
+      fetchAssignmentHelp(activeAssignment.id);
+    } else {
+      setAssignmentHelpRequests([]);
+    }
+  }, [activeAssignment?.id]);
+
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6 overflow-x-hidden">
       {/* Breadcrumb & Header */}
       <div className="space-y-2 pb-2 border-b border-cw-line">
         <div className="flex items-center gap-1.5 text-xs text-cw-faint">
@@ -77,9 +112,9 @@ export default function WeekInspectorPage() {
           <span className="text-cw-ink font-medium">Pekan {weekNumber}</span>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-xl font-semibold tracking-tight text-cw-ink">
                 Pekan {weekNumber}
               </h2>
@@ -102,13 +137,13 @@ export default function WeekInspectorPage() {
             </p>
           </div>
 
-          {/* Pemilih Pekan 1-16 (kotak 28px, titik 4px untuk kritis) */}
-          <div className="flex items-center gap-1 bg-cw-surface p-1 rounded-2xl border border-cw-line overflow-x-auto self-start sm:self-auto">
+          {/* Pemilih Pekan 1-16 (terkunci dalam lebar layar mobile agar tidak tembus kanan) */}
+          <div className="w-full max-w-full sm:w-auto flex items-center gap-1 bg-cw-surface p-1 rounded-2xl border border-cw-line overflow-x-auto">
             <button
               onClick={() => router.push(`/weeks/${Math.max(1, weekNumber - 1)}`)}
               disabled={weekNumber <= 1}
               aria-label="Pekan sebelumnya"
-              className="p-1 rounded-lg text-cw-faint hover:text-cw-ink disabled:opacity-30"
+              className="p-1.5 rounded-lg text-cw-faint hover:text-cw-ink disabled:opacity-30 flex-shrink-0"
             >
               <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
             </button>
@@ -121,7 +156,7 @@ export default function WeekInspectorPage() {
                 <button
                   key={w}
                   onClick={() => router.push(`/weeks/${w}`)}
-                  className={`w-7 h-7 rounded-xl text-xs font-semibold relative transition-colors ${
+                  className={`w-7 h-7 rounded-xl text-xs font-semibold relative transition-colors flex-shrink-0 ${
                     isCurrent
                       ? "bg-cw-accent text-white"
                       : "text-cw-muted hover:bg-cw-subtle hover:text-cw-ink"
@@ -139,13 +174,37 @@ export default function WeekInspectorPage() {
               onClick={() => router.push(`/weeks/${Math.min(16, weekNumber + 1)}`)}
               disabled={weekNumber >= 16}
               aria-label="Pekan berikutnya"
-              className="p-1 rounded-lg text-cw-faint hover:text-cw-ink disabled:opacity-30"
+              className="p-1.5 rounded-lg text-cw-faint hover:text-cw-ink disabled:opacity-30 flex-shrink-0"
             >
               <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Maskot Schedule Assistant: Cody (BINUS) */}
+      {!loading && data && (
+        <MascotBanner
+          persona="binus"
+          callout={isCollision ? "CEK SOLVER!" : "JADWAL AMAN!"}
+          pose={isCollision ? "calculating.webp" : "resolved.webp"}
+          tone={isCollision ? "warning" : "success"}
+          headline={
+            isCollision
+              ? `Pekan ${weekNumber} membutuhkan penyeimbangan (${data.metric.collisionCount} matkul bentrok)`
+              : `Pekan ${weekNumber} terpantau aman`
+          }
+          message={
+            isCollision
+              ? role === "LECTURER"
+                ? "Anda dapat menggeser jadwal mata kuliah yang Anda ampu pada panel Rekomendasi di bawah."
+                : role === "ADMIN"
+                ? "Gunakan panel Rekomendasi Geser Jadwal di bawah untuk menurunkan bentrok lintas mata kuliah."
+                : "Pekan ini padat. Buka bagian Materi & Bantuan Video di bawah untuk mencari panduan atau berdiskusi dengan teman sekelas."
+              : "Beban tugas pada pekan ini masih di bawah ambang tabrakan."
+          }
+        />
+      )}
 
       {/* Tata letak dua kolom (lg:grid-cols-12) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -168,34 +227,47 @@ export default function WeekInspectorPage() {
             </button>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-2">
             {data?.assignments.map((item, idx) => {
               const isSelected = selectedAssignmentIndex === idx;
               const isMajor = item.weightScore >= 3;
+              const isMyCourse = role === "LECTURER" && item.lecturerId === currentUser?.id;
 
               return (
                 <div
                   key={item.id}
                   onClick={() => setSelectedAssignmentIndex(idx)}
-                  className={`p-3 rounded-xl border transition-colors cursor-pointer ${
+                  className={`p-3 rounded-xl border transition-colors cursor-pointer flex flex-col justify-between gap-1.5 ${
                     isSelected
                       ? "bg-cw-accent-soft/40 border-cw-accent-line text-cw-ink"
                       : "bg-cw-surface border-cw-line hover:bg-cw-subtle text-cw-ink"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <Tag>{item.courseCode}</Tag>
-                    <span className="text-[11px] text-cw-faint font-medium">
-                      {isMajor ? "Tugas besar · " : ""}Bobot {item.weightScore}/5
-                    </span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <Tag>{item.courseCode}</Tag>
+                      <span className="text-[10px] sm:text-[11px] text-cw-faint font-medium truncate">
+                        {isMyCourse ? "Milik Anda · " : isMajor ? "Besar · " : ""}{item.weightScore}/5
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] font-medium text-cw-accent truncate">
+                      {item.courseName}
+                    </p>
+
+                    <h4 className="font-semibold text-xs text-cw-ink line-clamp-2 leading-snug">
+                      {idx + 1}. {item.title}
+                    </h4>
                   </div>
 
-                  <h4 className="font-semibold text-xs text-cw-ink truncate">
-                    {idx + 1}. {item.title}
-                  </h4>
-                  <p className="text-[11px] text-cw-faint mt-0.5">
-                    Tenggat: {formatDate(item.dueDate)} · {item.subtopics?.length || 0} sub-topik
-                  </p>
+                  <div className="pt-1 border-t border-cw-line/70 space-y-0.5 text-[10px] sm:text-[11px] text-cw-muted">
+                    <p className="truncate">
+                      Dosen: <span className="font-medium text-cw-ink">{item.lecturerName || "-"}</span>
+                    </p>
+                    <p className="truncate">
+                      {formatDayDate(item.dueDate)}
+                    </p>
+                  </div>
                 </div>
               );
             })}
@@ -212,19 +284,33 @@ export default function WeekInspectorPage() {
           )}
         </div>
 
-        {/* Kolom Kanan: Rincian Tugas & Solver (col-span-8) */}
+        {/* Kolom Kanan: Rincian Tugas, Materi/Video & Geser Jadwal (col-span-8) */}
         <div className="lg:col-span-8 space-y-5">
           {activeAssignment && (
-            <div className="cw-card p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-cw-line">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Tag>{activeAssignment.courseCode}</Tag>
-                    <span className="text-xs text-cw-faint">
-                      Dosen: {activeAssignment.lecturerName}
+            <div className="cw-card overflow-hidden">
+              <div className="p-3 pb-0">
+                <div className="h-32 w-full relative rounded-xl overflow-hidden">
+                  <PastelIllustration
+                    palette="biru"
+                    imageSrc={getTopicImage(
+                      `${activeAssignment.courseCode} ${activeAssignment.courseName} ${activeAssignment.title}`,
+                      weekNumber
+                    )}
+                  />
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="bg-slate-900/75 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-md">
+                      {activeAssignment.courseCode} · {activeAssignment.courseName}
                     </span>
                   </div>
-                  <h3 className="text-base font-semibold text-cw-ink mt-1">
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-cw-line">
+                <div>
+                  <span className="text-xs text-cw-faint">
+                    Dosen: {activeAssignment.lecturerName}
+                  </span>
+                  <h3 className="text-base font-semibold text-cw-ink mt-0.5">
                     {activeAssignment.title}
                   </h3>
                 </div>
@@ -247,7 +333,7 @@ export default function WeekInspectorPage() {
                 <div className="py-3 sm:pr-4">
                   <span className="text-[11px] text-cw-faint block">Tenggat</span>
                   <span className="text-xs font-semibold text-cw-ink mt-0.5 block">
-                    {formatDate(activeAssignment.dueDate)}
+                    {formatDayDate(activeAssignment.dueDate)}
                   </span>
                 </div>
 
@@ -287,10 +373,99 @@ export default function WeekInspectorPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Materi, Link Video & Diskusi Bantuan langsung di detail tugas */}
+              <div className="pt-3 border-t border-cw-line space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-cw-ink">
+                    Materi &amp; Bantuan Video ({assignmentHelpRequests.length})
+                  </span>
+                  <Link
+                    href="/help"
+                    className="text-[11px] font-medium text-cw-accent hover:underline"
+                  >
+                    Buka semua di Bantuan Sebaya →
+                  </Link>
+                </div>
+
+                {assignmentHelpRequests.length === 0 ? (
+                  <div className="p-3 rounded-xl bg-cw-subtle border border-dashed border-cw-line flex items-center justify-between gap-3">
+                    <p className="text-xs text-cw-muted">
+                      Belum ada diskusi atau tautan video materi untuk tugas ini.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        setSelectedAssignmentForHelp(activeAssignment);
+                        setHelpModalOpen(true);
+                      }}
+                    >
+                      Mulai diskusi
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {assignmentHelpRequests.map((req) => {
+                      const videoResp = req.responses?.find(
+                        (r) => r.responseType === "RECORDED_LINK"
+                      );
+                      const videoUrl = videoResp?.contentOrUrl.split("\n")[0]?.trim();
+
+                      return (
+                        <div
+                          key={req.id}
+                          className="p-3 rounded-xl border border-cw-line bg-cw-subtle/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Tag>#{req.subtopicLabel}</Tag>
+                              <span className="text-[11px] text-cw-faint flex items-center gap-1">
+                                <MessageSquare className="w-3 h-3" />
+                                {req.responses?.length || 0} tanggapan
+                              </span>
+                            </div>
+                            <p className="text-xs text-cw-ink line-clamp-1">
+                              {req.questionDetail}
+                            </p>
+                            {videoUrl && videoUrl.startsWith("http") && (
+                              <a
+                                href={videoUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-cw-accent hover:underline font-medium"
+                              >
+                                <Video className="w-3 h-3" />
+                                <span className="truncate max-w-[260px]">Tonton video materi</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            className="flex-shrink-0"
+                            onClick={() => {
+                              setSelectedHelpRequest(req);
+                              setDrawerOpen(true);
+                            }}
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Tambah Link Video / Jawab</span>
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              </div>
             </div>
           )}
 
-          {/* Panel Solver */}
+          {/* Panel Rekomendasi Geser Jadwal */}
           <DateMoveSolver
             candidates={data?.candidates || []}
             weekNumber={weekNumber}
@@ -322,6 +497,19 @@ export default function WeekInspectorPage() {
           preselectedAssignmentId={selectedAssignmentForHelp?.id}
         />
       )}
+
+      {/* Drawer Tanggapan & Link Video */}
+      <HelpResponseDrawer
+        request={selectedHelpRequest}
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onUpdated={() => {
+          if (activeAssignment?.id) {
+            fetchAssignmentHelp(activeAssignment.id);
+          }
+          fetchWeekData();
+        }}
+      />
     </div>
   );
 }

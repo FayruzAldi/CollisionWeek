@@ -9,7 +9,25 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return "-";
   try {
-    return format(new Date(date), "MMM d, yyyy");
+    return new Date(date).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return String(date);
+  }
+}
+
+export function formatDayDate(date: string | Date | null | undefined): string {
+  if (!date) return "-";
+  try {
+    return new Date(date).toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return String(date);
   }

@@ -160,6 +160,7 @@ export async function runBenchmarkSeed() {
   // 1. Clean existing records
   await prisma.helpResponse.deleteMany();
   await prisma.helpRequest.deleteMany();
+  await prisma.studentShiftRequest.deleteMany();
   await prisma.dateMoveProposal.deleteMany();
   await prisma.assignment.deleteMany();
   await prisma.course.deleteMany();
@@ -167,57 +168,132 @@ export async function runBenchmarkSeed() {
   await prisma.user.deleteMany();
   await prisma.program.deleteMany();
 
-  // 2. Create Academic Program (22 Feb 2027 - 11 Jun 2027)
+  // 2. Create Multi-Major Academic Programs (Lintas Jurusan, 22 Feb 2027 - 11 Jun 2027)
   const semesterStartDate = new Date("2027-02-22T00:00:00.000Z");
-  const program = await prisma.program.create({
-    data: {
-      code: "IF-2027",
-      name: "Teknik Informatika",
-      semesterStartDate,
-      totalWeeks: 16,
-    },
-  });
+  const programDefs = [
+    { code: "IF-2027", name: "Teknik Informatika" },
+    { code: "SI-2027", name: "Sistem Informasi" },
+    { code: "TE-2027", name: "Teknik Elektro" },
+    { code: "TI-2027", name: "Teknik Industri" },
+    { code: "MN-2027", name: "Manajemen" },
+    { code: "AK-2027", name: "Akuntansi" },
+  ];
+  const programsByCode = new Map<string, any>();
+  for (const def of programDefs) {
+    const p = await prisma.program.create({
+      data: {
+        code: def.code,
+        name: def.name,
+        semesterStartDate,
+        totalWeeks: 16,
+      },
+    });
+    programsByCode.set(def.code, p);
+  }
+  const program = programsByCode.get("IF-2027")!;
 
-  // 3. Create Admin
+  const buildAvatarUrl = (name: string, role: "ADMIN" | "LECTURER" | "STUDENT") => {
+    const bg =
+      role === "ADMIN"
+        ? "c0aede"
+        : role === "LECTURER"
+        ? "b6e3f4,d1d4f9"
+        : "b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf";
+    return `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=${bg}`;
+  };
+
+  // 3. Create Admin (Kaprodi / Akademik Pusat)
   await prisma.user.create({
     data: {
       programId: program.id,
       name: "Prof. Maya Arisanti",
-      email: "maya.arisanti@itb.ac.id",
+      email: "maya.arisanti@umk.ac.id",
       role: "ADMIN",
-      avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      avatarUrl: buildAvatarUrl("Prof. Maya Arisanti", "ADMIN"),
     },
   });
 
-  // 4. Create Lecturers
+  // 4. Create Lecturers for IF-2027 (matching courses.csv) + dedicated lecturers for other jurusan
   const lecturerMap = new Map();
-  for (const l of lecturersData) {
-    const emailPrefix = l.name.toLowerCase().replace(/[^a-z]/g, "");
+  const programList = Array.from(programsByCode.values());
+  for (let i = 0; i < lecturersData.length; i++) {
+    const l = lecturersData[i];
+    const cleanSlug = l.name
+      .toLowerCase()
+      .replace(/^(dr\.|prof\.|ir\.)\s*/g, "")
+      .replace(/,.*$/g, "")
+      .trim()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "");
     const user = await prisma.user.create({
       data: {
         programId: program.id,
         name: l.name,
-        email: `${emailPrefix || l.lecturer_id.toLowerCase()}@itb.ac.id`,
+        email: `${cleanSlug || l.lecturer_id.toLowerCase()}@umk.ac.id`,
         role: "LECTURER",
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(l.name)}`,
+        avatarUrl: buildAvatarUrl(l.name, "LECTURER"),
       },
     });
     lecturerMap.set(l.lecturer_id, user);
   }
 
-  // 5. Create Students (40 students S01..S40)
+  const extraLecturersByProdi = new Map<string, any>();
+  const extraLecturerDefs = [
+    { code: "SI-2027", name: "Dr. Rina Kusuma", email: "rina.kusuma@umk.ac.id" },
+    { code: "TE-2027", name: "Ir. Andi Pratama, M.T.", email: "andi.pratama@umk.ac.id" },
+    { code: "TI-2027", name: "Dr. Dewi Kartika", email: "dewi.kartika@umk.ac.id" },
+    { code: "MN-2027", name: "Dr. Hendra Wijaya, M.B.A.", email: "hendra.wijaya@umk.ac.id" },
+    { code: "AK-2027", name: "Dr. Ratna Sari, M.Ak.", email: "ratna.sari@umk.ac.id" },
+  ];
+  for (const el of extraLecturerDefs) {
+    const p = programsByCode.get(el.code);
+    if (!p) continue;
+    const u = await prisma.user.create({
+      data: {
+        programId: p.id,
+        name: el.name,
+        email: el.email,
+        role: "LECTURER",
+        avatarUrl: buildAvatarUrl(el.name, "LECTURER"),
+      },
+    });
+    extraLecturersByProdi.set(el.code, u);
+  }
+
+  // 5. Create Students (40 students distributed across 6 jurusan, UMK student emails)
   const studentMap = new Map();
-  for (const s of studentsData) {
+  const studentsByProdi = new Map<string, any[]>();
+  const usedStudentEmails = new Set<string>();
+  for (let i = 0; i < studentsData.length; i++) {
+    const s = studentsData[i];
+    const assignedProgram =
+      i < 10
+        ? programsByCode.get("IF-2027")!
+        : programList[(i - 10) % programList.length];
+    const baseSlug = s.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "");
+    let studentEmail = `${baseSlug}@std.umk.ac.id`;
+    if (usedStudentEmails.has(studentEmail)) {
+      studentEmail = `${baseSlug}.${s.student_id.toLowerCase()}@std.umk.ac.id`;
+    }
+    usedStudentEmails.add(studentEmail);
+
     const user = await prisma.user.create({
       data: {
-        programId: program.id,
+        programId: assignedProgram.id,
         name: s.name,
-        email: `${s.student_id.toLowerCase()}@mahasiswa.itb.ac.id`,
+        email: studentEmail,
         role: "STUDENT",
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(s.name)}`,
+        avatarUrl: buildAvatarUrl(s.name, "STUDENT"),
       },
     });
     studentMap.set(s.student_id, user);
+    const arr = studentsByProdi.get(assignedProgram.code) || [];
+    arr.push(user);
+    studentsByProdi.set(assignedProgram.code, arr);
   }
 
   // 6. Create Courses (8 Courses)
@@ -281,7 +357,7 @@ export async function runBenchmarkSeed() {
     });
   }
 
-  // 8. Compute and Save Weekly Metrics
+  // 8. Compute and Save Weekly Metrics for IF-2027
   const computedMetrics = computeAllWeeklyMetrics(metricInputAssignments, 16);
 
   for (let w = 1; w <= 16; w++) {
@@ -295,6 +371,127 @@ export async function runBenchmarkSeed() {
         isFlagged: m.isFlagged,
       },
     });
+  }
+
+  // 8b. Seed courses, assignments & weekly metrics for lintas jurusan (SI, TE, TI, MN, AK)
+  const allLecturers = Array.from(lecturerMap.values());
+  const extraProdiCourses: Record<
+    string,
+    { code: string; name: string; color: string; tasks: { title: string; week: number; weight: number; subtopics: string[] }[] }[]
+  > = {
+    "SI-2027": [
+      { code: "SI201", name: "Analisis & Desain Sistem", color: "#4F46E5", tasks: [{ title: "Dokumen SRS Sistem Kampus", week: 6, weight: 4, subtopics: ["Use Case", "ERD"] }, { title: "Prototipe Dashboard Bisnis", week: 10, weight: 4, subtopics: ["Wireframe", "API Integration"] }] },
+      { code: "SI202", name: "Manajemen Basis Data Enterprise", color: "#0284C7", tasks: [{ title: "Normalisasi & Query Tuning", week: 10, weight: 3, subtopics: ["Indexing", "3NF"] }] },
+      { code: "SI203", name: "Tata Kelola TI", color: "#059669", tasks: [{ title: "Audit COBIT 2019", week: 10, weight: 4, subtopics: ["Risk Matrix", "Compliance"] }, { title: "Laporan Evaluasi Akhir", week: 14, weight: 4, subtopics: ["Governance"] }] },
+    ],
+    "TE-2027": [
+      { code: "TE201", name: "Rangkaian Listrik II", color: "#DC2626", tasks: [{ title: "Simulasi Rangkaian AC", week: 6, weight: 4, subtopics: ["Impedansi", "Phasor"] }, { title: "Proyek Filter Aktif", week: 10, weight: 4, subtopics: ["Op-Amp", "Bode Plot"] }] },
+      { code: "TE202", name: "Sistem Mikroprosesor", color: "#D97706", tasks: [{ title: "Kontrol Sensor IoT", week: 10, weight: 4, subtopics: ["UART", "PWM"] }] },
+      { code: "TE203", name: "Pengolahan Sinyal Digital", color: "#7C3AED", tasks: [{ title: "Implementasi FFT", week: 10, weight: 3, subtopics: ["Discrete Fourier", "Windowing"] }] },
+    ],
+    "TI-2027": [
+      { code: "TI201", name: "Penelitian Operasional", color: "#0D9488", tasks: [{ title: "Optimasi Rantai Pasok", week: 10, weight: 4, subtopics: ["Linear Programming", "Simplex"] }] },
+      { code: "TI202", name: "Ergonomi & Perancangan Kerja", color: "#EA580C", tasks: [{ title: "Analisis Postur REBA/RULA", week: 10, weight: 3, subtopics: ["Antropometri", "Workstation"] }] },
+      { code: "TI203", name: "Sistem Produksi Lean", color: "#4F46E5", tasks: [{ title: "Value Stream Mapping", week: 10, weight: 4, subtopics: ["Kaizen", "Kanban"] }, { title: "Simulasi Lini Perakitan", week: 14, weight: 4, subtopics: ["Bottleneck"] }] },
+    ],
+    "MN-2027": [
+      { code: "MN201", name: "Manajemen Pemasaran Strategis", color: "#7C3AED", tasks: [{ title: "Riset Pasar & Segmentasi", week: 6, weight: 3, subtopics: ["STP", "Survey"] }, { title: "Rencana Kampanye Produk", week: 10, weight: 4, subtopics: ["Brand Positioning", "ROI"] }] },
+      { code: "MN202", name: "Manajemen Keuangan Korporat", color: "#0284C7", tasks: [{ title: "Valuasi Arus Kas DCF", week: 10, weight: 4, subtopics: ["NPV", "IRR", "WACC"] }] },
+      { code: "MN203", name: "Perilaku Organisasi", color: "#059669", tasks: [{ title: "Studi Kasus Kepemimpinan", week: 10, weight: 3, subtopics: ["Motivasi Tim", "Budaya Kerja"] }] },
+    ],
+    "AK-2027": [
+      { code: "AK201", name: "Akuntansi Keuangan Menengah", color: "#D97706", tasks: [{ title: "Penyusunan Laporan Laba Rugi", week: 6, weight: 4, subtopics: ["PSAK", "Aset Tetap"] }, { title: "Rekonsiliasi & Arus Kas", week: 10, weight: 4, subtopics: ["Cash Flow", "Jurnal Penyesuaian"] }] },
+      { code: "AK202", name: "Audit & Asurans", color: "#DC2626", tasks: [{ title: "Kertas Kerja Pemeriksaan", week: 10, weight: 4, subtopics: ["Sampling Audit", "Materialitas"] }] },
+      { code: "AK203", name: "Perpajakan Lanjutan", color: "#0D9488", tasks: [{ title: "Simulasi SPT Badan", week: 10, weight: 3, subtopics: ["PPh Badan", "Korek Fiskal"] }] },
+    ],
+  };
+
+  for (const [prodiCode, courseDefs] of Object.entries(extraProdiCourses)) {
+    const prodi = programsByCode.get(prodiCode);
+    if (!prodi) continue;
+    const prodiInputs: any[] = [];
+
+    for (let cIdx = 0; cIdx < courseDefs.length; cIdx++) {
+      const cd = courseDefs[cIdx];
+      const lec =
+        extraLecturersByProdi.get(prodiCode) ||
+        allLecturers[(cIdx + prodiCode.charCodeAt(0)) % allLecturers.length];
+      const createdCourse = await prisma.course.create({
+        data: {
+          programId: prodi.id,
+          lecturerId: lec.id,
+          courseCode: cd.code,
+          courseName: cd.name,
+          semesterLevel: 4,
+          color: cd.color,
+        },
+      });
+
+      const prodiStudents = studentsByProdi.get(prodiCode) || [];
+      const reqStudent = prodiStudents[cIdx % prodiStudents.length];
+      const helperStudent = prodiStudents[(cIdx + 1) % prodiStudents.length];
+
+      for (const t of cd.tasks) {
+        const dueDate = addDays(semesterStartDate, (t.week - 1) * 7 + 4);
+        const createdA = await prisma.assignment.create({
+          data: {
+            courseId: createdCourse.id,
+            title: t.title,
+            type: t.weight >= 4 ? "PROJECT" : "LAB",
+            weightScore: t.weight,
+            dueDate,
+            weekNumber: t.week,
+            subtopics: JSON.stringify(t.subtopics),
+          },
+        });
+        prodiInputs.push({
+          id: createdA.id,
+          courseId: createdCourse.id,
+          courseCode: cd.code,
+          title: t.title,
+          weightScore: t.weight,
+          dueDate,
+          weekNumber: t.week,
+        });
+
+        // Seed 1 help request + video/written response per course's main task
+        if (reqStudent && helperStudent && t.week === 10) {
+          const sub = t.subtopics[0] || cd.name;
+          const hr = await prisma.helpRequest.create({
+            data: {
+              assignmentId: createdA.id,
+              requesterId: reqStudent.id,
+              subtopicLabel: sub,
+              questionDetail: `Mohon bantuan untuk materi "${sub}" pada mata kuliah ${cd.name}. Apakah ada referensi atau video penjelasannya?`,
+              status: "IN_PROGRESS",
+              firstResponseAt: new Date(),
+            },
+          });
+          await prisma.helpResponse.create({
+            data: {
+              requestId: hr.id,
+              helperId: helperStudent.id,
+              responseType: "RECORDED_LINK",
+              contentOrUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(sub + " " + cd.name)}\nCatatan: Rangkuman video pembahasan "${sub}" untuk tugas ${t.title}.`,
+            },
+          });
+        }
+      }
+    }
+
+    const prodiMetrics = computeAllWeeklyMetrics(prodiInputs, 16);
+    for (let w = 1; w <= 16; w++) {
+      const pm = prodiMetrics.get(w);
+      await prisma.weeklyMetric.create({
+        data: {
+          programId: prodi.id,
+          weekNumber: w,
+          loadIndex: pm.loadIndex,
+          collisionCount: pm.collisionCount,
+          isFlagged: pm.isFlagged,
+        },
+      });
+    }
   }
 
   // 9. Generate Deterministic Date Move Proposals for Flagged Weeks
@@ -347,14 +544,14 @@ export async function runBenchmarkSeed() {
     if (hr.helper_id && studentMap.has(hr.helper_id)) {
       const helper = studentMap.get(hr.helper_id);
       let replyType = "WRITTEN";
-      let contentOrUrl = `Halo ${requester.name}, berikut adalah solusi dan panduan untuk ${hr.sub_topic}. Semoga membantu!`;
+      let contentOrUrl = `Halo ${requester.name}, berikut panduan langkah demi langkah untuk "${hr.sub_topic}":\n1. Pahami konsep dasar & batasan masalah pada modul kuliah.\n2. Uji dengan kasus uji kecil sebelum digabung ke proyek utama.\nReferensi catatan: https://docs.python.org/3/tutorial/`;
 
       if (hr.reply_type.toLowerCase() === "session") {
         replyType = "SESSION_20MIN";
-        contentOrUrl = `Usulan sesi 20 menit via Google Meet untuk membahas materi ${hr.sub_topic} bersama.`;
+        contentOrUrl = `Usulan sesi 20 menit via Google Meet untuk membahas materi ${hr.sub_topic} bersama.\nTautan Meet: https://meet.google.com/new\nJadwal fleksibel: malam ini pukul 19.30 WIB.`;
       } else if (hr.reply_type.toLowerCase() === "recorded") {
         replyType = "RECORDED_LINK";
-        contentOrUrl = "https://loom.com/share/demo-tutorial-subtopic\nCatatan: Penjelasan langkah penyelesaian 5 menit.";
+        contentOrUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(hr.sub_topic + " tutorial")}\nCatatan: Video penjelasan konsep & contoh implementasi "${hr.sub_topic}" berdurasi ~8 menit.`;
       }
 
       await prisma.helpResponse.create({
@@ -368,6 +565,48 @@ export async function runBenchmarkSeed() {
         },
       });
     }
+  }
+
+  // 11. Seed Student Shift Requests & Reasons (agar dosen langsung melihat aspirasi mahasiswa)
+  const w10Assignments = metricInputAssignments.filter(
+    (a) => a.weekNumber === 10 && a.weightScore >= 3
+  );
+  const w14Assignments = metricInputAssignments.filter(
+    (a) => a.weekNumber === 14 && a.weightScore >= 4
+  );
+  const ifStudents = studentsByProdi.get("IF-2027") || [];
+  const sampleShiftReasons = [
+    "Di Pekan 10 ada 4 tenggat proyek besar bersamaan sehingga waktu integrasi dan pengujian sangat sempit.",
+    "Kami perlu tambahan 1 pekan untuk menyelesaikan konfigurasi subnetting & simulasi topologi jaringan.",
+    "Bentrok dengan evaluasi proyek Algoritma dan Prototipe HCI di pekan yang sama, mohon kelonggaran ke pekan berikutnya.",
+    "Pekan 14 menumpuk 5 proyek akhir lintas matkul sebelum UAS; menggeser satu tugas ke Pekan 15 sangat membantu kualitas hasil.",
+  ];
+  for (let i = 0; i < Math.min(3, w10Assignments.length); i++) {
+    const a = w10Assignments[i];
+    const stu = ifStudents[i % ifStudents.length];
+    if (!stu) continue;
+    await prisma.studentShiftRequest.create({
+      data: {
+        assignmentId: a.id,
+        studentId: stu.id,
+        originalWeek: 10,
+        proposedWeek: 11,
+        reason: sampleShiftReasons[i % sampleShiftReasons.length],
+        status: "PENDING",
+      },
+    });
+  }
+  if (w14Assignments[0] && ifStudents[3]) {
+    await prisma.studentShiftRequest.create({
+      data: {
+        assignmentId: w14Assignments[0].id,
+        studentId: ifStudents[3].id,
+        originalWeek: 14,
+        proposedWeek: 15,
+        reason: sampleShiftReasons[3],
+        status: "PENDING",
+      },
+    });
   }
 
   return { success: true };

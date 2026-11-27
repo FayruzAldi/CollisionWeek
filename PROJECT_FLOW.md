@@ -1,232 +1,237 @@
 # Diagram & Alur Sistem (Project Flow): Collision Week
 
-> **Platform:** Next.js 14 (App Router) + TypeScript + Prisma 5 (SQLite) + Tailwind CSS 3.4  
+> **Platform:** Next.js 14 (App Router) + TypeScript + Prisma 5 (**Neon PostgreSQL**) + Tailwind CSS 3.4 + Recharts + PWA (`sw.js` v3)  
 > **Kompetisi:** STACK 2026 by GDGoC ITB — *Case 1: Smarter Campus and Learning*  
 > **Tim Pengembang:** `daftar krna gratis`  
-> **Dokumen Terkait:** [PRD (product_requirements_document_prd_collision_week.md)](file:///e:/ProjectWebsitev2/CollisionWeek/product_requirements_document_prd_collision_week.md) & [UI/UX Spec (UIUX_REDESIGN_SPEC.md)](file:///e:/ProjectWebsitev2/CollisionWeek/UIUX_REDESIGN_SPEC.md)
+> **Dokumen Terkait:** [README.md](file:///e:/ProjectWebsitev2/CollisionWeek/README.md)
 
 ---
 
-## 1. Arsitektur Solusi 2-Layer (High-Level Overview)
+## 1. Arsitektur Solusi 2-Layer, Isolasi Multi-Jurusan & RBAC
 
-Collision Week menyelesaikan krisis penumpukan tenggat tugas akademik melalui arsitektur komplementer **dua lapis (Two-Layer Architecture)**:
-1. **Layer 1 (Pencegahan di Hulu - *Deterministic Scheduling*):** Mengagregasi seluruh silabus tugas satu program studi ke dalam kalender bersama, menghitung indeks beban dan tabrakan secara matematis murni, serta mengusulkan pergeseran tanggal terkecil (*minimal date moves*) untuk disetujui dosen.
-2. **Layer 2 (Peredam di Hilir - *Sub-topic Peer Help*):** Mengakomodasi kebuntuan mahasiswa pada tugas-tugas di pekan yang tetap padat melalui forum bantuan sebaya terstruktur berbasis sub-topik dengan 3 kanal respons inklusif (tulisan, rekaman, sesi 20 menit).
+Collision Week menyelesaikan krisis penumpukan tenggat tugas akademik lintas program studi melalui arsitektur komplementer **dua lapis (Two-Layer Architecture)** yang dilengkapi autentikasi cookie bertanda tangan, isolasi prodi (*multi-major*), dan alur aspirasi mahasiswa:
+
+1. **Layer 1 (Pencegahan di Hulu - *Deterministic Scheduling*):** Mengagregasi silabus tugas per program studi (6 jurusan: Teknik Informatika, Sistem Informasi, Teknik Elektro, Teknik Industri, Manajemen, Akuntansi) melalui unggah CSV *drag-and-drop*, menghitung indeks beban dan tabrakan secara matematis murni, menampung usulan pergeseran tanggal beserta alasan dari mahasiswa, serta mengeksekusi pergeseran tanggal terkecil (*minimal date moves*) hanya oleh dosen pengampu mata kuliah terkait atau admin.
+2. **Layer 2 (Peredam di Hilir - *Sub-topic Peer Help*):** Mengakomodasi kebuntuan mahasiswa pada tugas di pekan padat melalui papan bantuan sebaya terisolasi per prodi berbasis sub-topik dengan 3 kanal respons inklusif (tulisan, tautan rekaman, dan sesi 20 menit).
 
 ```mermaid
 flowchart TD
-    subgraph Ingesti["1. Ingesti Data"]
-        CSV["Berkas CSV Silabus Tugas"] --> Parser["PapaParse + Validasi Skema Zod"]
-        Parser --> DB[("Database Akademik\n(Prisma / SQLite)")]
+    subgraph Auth["0. Autentikasi & Isolasi Prodi"]
+        Login["Halaman Masuk (/login)\n52 Akun UMK + Avatar"] --> Cookie["Cookie httpOnly HMAC-SHA256\n(cw_session)"]
+        Cookie --> MW["src/middleware.ts +\nrequireCapability()"]
+    end
+
+    subgraph Ingesti["1. Ingesti Data CSV"]
+        CSV["Drag-and-Drop CSV / 6 Template Prodi\n(/csv-templates/jadwal-*.csv)"] --> Parser["PapaParse + Validasi Zod\n(4-Step Progress Bar)"]
+        Parser --> DB[("Neon PostgreSQL\n(Prisma ORM)")]
     end
 
     subgraph Layer1["2. Layer 1: Deterministic Load Balancing"]
-        DB --> CalcEngine["Mesin Kalkulasi Deterministik\n(Tanpa AI/LLM)"]
+        DB --> ProdiFilter["Isolasi Prodi Aktif\n(Admin bisa pindah prodi;\nDosen & Mahasiswa terkunci di prodinya)"]
+        ProdiFilter --> CalcEngine["Mesin Kalkulasi Deterministik\n(Tanpa AI/LLM)"]
         CalcEngine --> HeatMap["Semester Heat Map 16 Pekan\n(L_w & C_w Score)"]
-        HeatMap --> CheckCollision{"Apakah C_w >= 3?\n(Minggu Kritis)"}
+        HeatMap --> CheckCollision{"Apakah C_w >= 3?\n(Pekan Kritis)"}
         CheckCollision -- Ya --> Flagged["Tandai Pekan Kritis (Cw >= 3)"]
         CheckCollision -- Tidak --> Safe["Pekan Aman / Waspada"]
         Flagged --> Solver["Algoritma Minimal Date Move"]
-        Solver --> ProposalList["Usulan Pergeseran Tanggal Minimal"]
-        ProposalList --> LecturerAction{"Persetujuan Dosen\n(1-Click)"}
-        LecturerAction -- Setuju (Accept) --> UpdateSchedule["Perbarui Jadwal & Rekalkulasi Peta Beban"]
+        Solver --> StudentReq["Mahasiswa Ajukan Usulan + Alasan\n(POST /api/shift-requests)"]
+        StudentReq --> ProposalList["Daftar Usulan & Alasan Mahasiswa"]
+        ProposalList --> Ownership{"Cek Kepemilikan Matkul\n(Dosen Pengampu / Admin)"}
+        Ownership -- Terapkan --> UpdateSchedule["Perbarui Jadwal & Rekalkulasi Peta Beban"]
         UpdateSchedule --> DB
-        LecturerAction -- Tolak (Reject) --> KeepSchedule["Pertahankan Jadwal Awal"]
+        Ownership -- Tolak --> KeepSchedule["Pertahankan Jadwal Awal"]
     end
 
     subgraph Layer2["3. Layer 2: Sub-topic Peer Help"]
         Safe & KeepSchedule & Flagged --> StudentView["Tugas Berjalan di Pekan Tersebut"]
         StudentView --> Blocked{"Mahasiswa Mengalami\nKebuntuan Belajar?"}
         Blocked -- Ya --> CreateHelp["Pilih Sub-topik Spesifik & Buat Pertanyaan"]
-        CreateHelp --> WholeClassBoard["Papan Bantuan Tingkat Kelas\n(Whole-class Visibility)"]
+        CreateHelp --> WholeClassBoard["Papan Bantuan Tingkat Kelas\n(Terisolasi per Prodi)"]
         WholeClassBoard --> HelperResponse["Respon Rekan Sebaya\n(Tulisan / Rekaman / Sesi 20 Mnt)"]
         HelperResponse --> ResolveLoop["Konfirmasi Selesai (Mark as Resolved)"]
     end
 
-    subgraph Analytics["4. Feedback Loop Dosen"]
+    subgraph Analytics["4. Feedback Loop & Analitik Dosen"]
         ResolveLoop --> SubtopicStats["Rekapitulasi Hambatan Sub-topik"]
-        SubtopicStats --> LecturerDashboard["Dasbor Analitik Dosen\n(Bahan Review Materi / Evaluasi RPS)"]
+        SubtopicStats --> LecturerDashboard["Dasbor Analitik Dosen (/analytics)\nGrafik Recharts + Banner WIRA"]
     end
 ```
 
 ---
 
-## 2. Alur Pengguna Berdasarkan Persona (User Journey Flows)
+## 2. Autentikasi, Keamanan Sesi & RBAC
 
-### 2.1 Persona 1: Admin / Koordinator Program Studi (Ingesti Jadwal)
-Tujuan: Mengimpor kalender tugas akademik satu semester penuh agar beban kurikulum langsung terpetakan.
+Sistem menggunakan autentikasi demo tanpa kata sandi dengan **otorisasi server-side nyata** agar peran dan program studi tidak dapat dipalsukan dari browser:
+
+1. **Daftar Akun UMK & Foto Profil:** Seluruh 52 akun demo di Neon PostgreSQL memakai domain resmi UMK (`@umk.ac.id` untuk 1 Admin & 11 Dosen, `@std.umk.ac.id` untuk 40 Mahasiswa lintas 6 jurusan) dan dilengkapi foto profil ilustratif (`avatarUrl`) yang dirender oleh komponen `UserAvatar`.
+2. **Sesi Cookie HMAC-SHA256 (`cw_session`):** Saat pengguna memilih akun di `/login`, `POST /api/auth/session` memverifikasi ID di database dan menandatangani token ke cookie `httpOnly` menggunakan `SESSION_SECRET`.
+3. **Middleware & Capability Gate:**
+   * `src/middleware.ts` melindungi seluruh rute halaman (kecuali `/login` dan aset publik) serta mengarahkan pengguna yang belum masuk ke `/login?next=...`.
+   * Setiap *route handler* memanggil `requireCapability(...)` (`src/lib/session.ts` & `src/lib/permissions.ts`) untuk membaca ulang peran dan `programId` langsung dari PostgreSQL.
+4. **Isolasi Program Studi (6 Jurusan):**
+   * Mahasiswa dan Dosen hanya melihat data pekan, mata kuliah, bantuan sebaya, permintaan geser, dan analitik milik program studinya masing-masing (`IF-2027`, `SI-2027`, `TE-2027`, `TI-2027`, `MN-2027`, atau `AK-2027`).
+   * Hanya `ADMIN` yang dapat berpindah antar program studi melalui parameter `?programId=`.
+5. **Penegakan Kepemilikan Mata Kuliah (*Lecturer Ownership*):**
+   * Pada `PATCH /api/proposals/[id]`, dosen hanya dapat menyetujui atau menolak pergeseran tugas untuk mata kuliah yang `lecturerId`-nya sama dengan ID dosen tersebut. Upaya menggeser mata kuliah dosen lain ditolak dengan status `403 Forbidden`.
+   * Pada menu cepat `+ Buat Baru` (`CreateContentModal.tsx`), Mahasiswa hanya melihat opsi **Minta bantuan sebaya** dan **Ajukan geser tanggal ke dosen**, sedangkan menu impor CSV, sesi 20 menit, analitik, dan reset data hanya tampil untuk Dosen/Admin.
+
+---
+
+## 3. Alur Pengguna Berdasarkan Persona (User Journey Flows)
+
+### 3.1 Persona 1: Admin / Koordinator & Dosen (Ingesti Jadwal CSV)
+Tujuan: Mengimpor kalender tugas akademik satu semester penuh per program studi dengan antarmuka *drag-and-drop* dan pemantauan progres 4 tahap.
 
 ```mermaid
 flowchart TD
-    A["Mulai: Buka Halaman Impor (/import)"] --> B["Pilih Berkas CSV / Tempel Teks CSV"]
-    B --> C["Klik 'Validasi skema'"]
-    C --> D{"Apakah Data Valid?\n(Validasi Zod)"}
-    D -- Tidak Valid --> E["Tampilkan Kesalahan Rinci per Nomor Baris"]
-    E --> F["Perbaiki Baris CSV yang Rusak"]
+    A["Buka Halaman Impor (/import)"] --> B["Unduh Template 6 Jurusan\n(/csv-templates/jadwal-*.csv) atau Siapkan CSV"]
+    B --> C["Drag-and-Drop Berkas ke Zona 'Drop here'\natau Pilih File CSV"]
+    C --> D["Progress Step 1-2: Validasi Skema Zod\n(PapaParse)"]
+    D --> E{"Apakah Data Valid?"}
+    E -- Tidak Valid --> F["Tampilkan Kesalahan Rinci per Baris"]
     F --> C
-    D -- Valid --> G["Tampilkan Pratinjau Baris & Ringkasan Metrik"]
+    E -- Valid --> G["Pratinjau Tugas & Ringkasan Metrik"]
     G --> H["Klik 'Simpan dan petakan jadwal'"]
-    H --> I["Kirim ke API POST /api/import/csv"]
-    I --> J["Hapus Tugas Lama & Simpan Tugas Baru"]
-    J --> K["Eksekusi Rekalkulasi computeAllWeeklyMetrics()"]
-    K --> L["Perbarui Tabel WeeklyMetric 1..16"]
-    L --> M["Munculkan Notifikasi Sukses (Toast)"]
-    M --> N["Arahkan ke Dasbor Peta Beban (/)"]
+    H --> I["Progress Step 3: POST /api/import/csv"]
+    I --> J["Simpan Course/Assignment & Hitung Ulang WeeklyMetric 1..16"]
+    J --> K["Progress Step 4: Selesai + Notifikasi Toast"]
+    K --> L["Arahkan ke Dasbor Peta Beban (/)"]
 ```
 
 ---
 
-### 2.2 Persona 2: Dosen Pengampu (Penyeimbangan Beban & Analitik Materi)
-Tujuan: Memastikan mahasiswa tidak mengalami *burnout* ekstrem pada pekan ujian/proyek dan mengidentifikasi sub-topik kuliah yang sulit dipahami mahasiswa.
+### 3.2 Persona 2: Dosen Pengampu (Peninjauan Aspirasi, Pergeseran Jadwal & Analitik)
+Tujuan: Meninjau alasan permintaan geser dari mahasiswa, menyeimbangkan pekan padat khusus mata kuliah yang diampu, serta memantau kendala sub-topik lewat grafik Recharts.
 
 ```mermaid
 flowchart TD
     subgraph SkenarioA["Skenario A: Penyeimbangan Beban Pekan"]
-        D1["Dosen Membuka Dasbor (/)"] --> D2["Melihat Pekan Kritis (Contoh: Pekan 8, Cw = 4)"]
-        D2 --> D3["Klik 'Seimbangkan' / Buka /weeks/8"]
-        D3 --> D4["Sistem Memuat Tugas & Kandidat Pergeseran"]
-        D4 --> D5["Dosen Meninjau Opsi: Misal Geser Proyek Basis Data ke Pekan 9"]
-        D5 --> D6["Melihat Dampak Penurunan: Cw Pekan 8 turun dari 4 ke 3, Pekan 9 tetap aman (Cw=2)"]
-        D6 --> D7{"Keputusan Dosen"}
-        D7 -- Klik 'Terapkan' --> D8["API PATCH /api/proposals/[id] (Action: ACCEPT)"]
-        D8 --> D9["Jadwal Diperbarui & Beban Dihitung Ulang Otomatis"]
-        D9 --> D10["Peta Beban Berubah Warna Menjadi Aman/Waspada"]
-        D7 -- Klik 'Tolak' --> D11["Pertahankan Jadwal Asli"]
+        D1["Dosen Membuka Dasbor (/) atau /weeks/10"] --> D2["Melihat Pekan Kritis di Prodinya (Cw >= 3)"]
+        D2 --> D3["Membaca Daftar 'Permintaan Geser dari Mahasiswa' + Alasan"]
+        D3 --> D4["Melihat Rekomendasi Solver untuk Matkul yang Diampu Sendiri"]
+        D4 --> D5{"Keputusan Dosen"}
+        D5 -- Klik 'Terapkan' --> D6["API PATCH /api/proposals/[id] (Action: ACCEPT)"]
+        D6 --> D7["Verifikasi Kepemilikan Matkul -> Jadwal Diperbarui & Beban Direkalkulasi"]
+        D5 -- Klik 'Tolak' --> D8["Pertahankan Jadwal Asli"]
     end
 
-    subgraph SkenarioB["Skenario B: Monitoring Evaluasi Materi Kuliah"]
-        D12["Dosen Membuka Menu 'Analitik' (/analytics)"] --> D13["Pilih Mata Kuliah yang Diampu (Misal: IF2110)"]
-        D13 --> D14["Melihat 4 KPI: Total Pertanyaan, Rasio Selesai, Waktu Respons Awal, Sub-topik Kritis"]
-        D14 --> D15["Melihat Peringkat Hambatan Sub-topik (Misal: Normalisasi 3NF, B-Tree Indexing)"]
-        D15 --> D16["Membaca Rekomendasi Sistem (Misal: Sediakan sesi asistensi tambahan sebelum ujian)"]
+    subgraph SkenarioB["Skenario B: Monitoring Analitik Recharts"]
+        D9["Dosen Membuka 'Analitik Dosen' (/analytics)"] --> D10["Melihat Banner WIRA (UMK) & Pilih Matkul"]
+        D10 --> D11["Melihat KPI: Total Pertanyaan, Rasio Selesai, Waktu Respons, Sub-topik Kritis"]
+        D11 --> D12["Melihat BarChart Sub-topik (Recharts) & Distribusi Format Bantuan"]
+        D12 --> D13["Menentukan Materi Review Sebelum Ujian / Praktikum"]
     end
 ```
 
 ---
 
-### 2.3 Persona 3: Mahasiswa (Bantuan Belajar Sebaya Berbasis Sub-topik)
-Tujuan: Memecahkan kebuntuan pengerjaan tugas tanpa canggung, menemukan teman sekelas yang paham, serta saling membantu secara asinkron maupun mikro-sesi.
+### 3.3 Persona 3: Mahasiswa (Pengajuan Geser Tanggal & Bantuan Belajar Sebaya)
+Tujuan: Mengajukan usulan pergeseran tenggat beserta alasan ke dosen saat pekan menumpuk, serta memecahkan kebuntuan tugas melalui papan bantuan sebaya.
 
 ```mermaid
 flowchart TD
-    subgraph Penanya["Alur Mahasiswa yang Mengalami Kendala (Requester)"]
-        M1["Mengerjakan Tugas Kuliah (Misal: Tugas Basis Data Pekan 8)"] --> M2["Mengalami Kebuntuan pada Bagian 'B-Tree Indexing'"]
-        M2 --> M3["Klik 'Minta Bantuan' di Pekan / Papan Bantuan (/help)"]
-        M3 --> M4["Pilih Tugas & Pilih Tag Sub-topik '#B-Tree Indexing'"]
-        M4 --> M5["Tuliskan Pertanyaan Ringkas & Spesifik"]
-        M5 --> M6["Kirim Permintaan (POST /api/help-requests)"]
-        M6 --> M7["Permintaan Tampil di Papan Kelas dengan Status 'Terbuka' (OPEN)"]
+    subgraph GeserTanggal["Alur Pengajuan Geser Tanggal (Mahasiswa)"]
+        S1["Mahasiswa Melihat Pekan Padat (/ atau /weeks/[w])"] --> S2["Buka Solver / Klik '+ Buat Baru' -> Ajukan Geser Tanggal"]
+        S2 --> S3["Pilih Tugas & Pekan Usulan"]
+        S3 --> S4["Tuliskan Alasan (min. 8 karakter)"]
+        S4 --> S5["Kirim ke POST /api/shift-requests"]
+        S5 --> S6["Usulan & Alasan Muncul di Panel Dosen Pengampu"]
     end
 
-    subgraph Penolong["Alur Rekan Sebaya yang Membantu (Helper)"]
-        M7 --> H1["Teman Sekelas Membuka Papan Bantuan (/help)"]
-        H1 --> H2["Melihat Pertanyaan dengan Tag '#B-Tree Indexing'"]
-        H2 --> H3["Membuka Drawer Tanggapan"]
-        H3 --> H4{"Pilih Kanal Bantuan yang Nyaman"}
-        H4 -- Opsi 1: Tulisan --> H5["Ketik Penjelasan Langkah / Potongan Logika"]
-        H4 -- Opsi 2: Rekaman --> H6["Cantumkan Tautan Rekaman Singkat (Loom/Drive/YouTube)"]
-        H4 -- Opsi 3: Sesi 20 Mnt --> H7["Pilih Slot Tanggal & Waktu Sesi Diskusi 20 Menit"]
-        H5 & H6 & H7 --> H8["Kirim Tanggapan (POST /api/help-requests/[id]/responses)"]
-        H8 --> H9["Status Permintaan Berubah Menjadi 'Sedang Dibahas' (IN_PROGRESS)"]
-        H9 --> H10["Waktu Respons Pertama (first_response_at) Otomatis Tercatat"]
-    end
-
-    subgraph Resolusi["Alur Siklus Penyelesaian (Resolution)"]
-        H10 --> R1["Penanya Membaca / Menonton Penjelasan Rekan"]
-        R1 --> R2{"Apakah Masalah Terpecahkan?"}
-        R2 -- Ya --> R3["Klik 'Tandai selesai' (PATCH /api/help-requests/[id]/resolve)"]
-        R3 --> R4["Status Menjadi 'Selesai' (RESOLVED) & resolved_at Tercatat"]
-        R4 --> R5["Skor Tingkat Penyelesaian Kelas di Dasbor Analitik Meningkat"]
-        R2 -- Belum --> R6["Beri Tanggapan Balik / Ikuti Sesi 20 Menit"]
+    subgraph PeerHelp["Alur Bantuan Sebaya (Penanya & Penolong)"]
+        M1["Klik 'Minta bantuan' di Pekan atau /help"] --> M2["Pilih Tugas, Sub-topik & Tulis Pertanyaan"]
+        M2 --> M3["POST /api/help-requests (Status: OPEN)"]
+        M3 --> H1["Teman Sekelas Satu Prodi Membuka Drawer Tanggapan"]
+        H1 --> H2{"Pilih Kanal Bantuan"}
+        H2 -- Tulisan --> H3["Penjelasan Langkah / Tautan Referensi"]
+        H2 -- Rekaman --> H4["Tautan Video (Loom / Drive / YouTube)"]
+        H2 -- Sesi 20 Mnt --> H5["Slot Waktu Sesi Diskusi 20 Menit"]
+        H3 & H4 & H5 --> H6["POST /api/help-requests/[id]/responses -> Status IN_PROGRESS"]
+        H6 --> R1["Penanya / Penolong Klik 'Tandai selesai' -> Status RESOLVED"]
     end
 ```
 
 ---
 
-## 3. Sequence Diagram (Detail Interaksi Komponen & API)
+## 4. Sequence Diagram & State Machine
 
-### 3.1 Sequence 1: Ingesti Jadwal CSV & Rekalkulasi Peta Beban
-Menunjukkan bagaimana file CSV diproses secara deterministik oleh server Next.js dan Prisma ORM.
+### 4.1 Sequence 1: Ingesti Jadwal CSV & Rekalkulasi Peta Beban
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as Admin Prodi
-    participant UI as Browser (CsvIngestionPage)
+    actor User as Admin / Dosen
+    participant UI as ImportPage (/import)
     participant Parser as csv-parser.ts (PapaParse + Zod)
-    participant API as /api/import/csv (Route Handler)
+    participant API as /api/import/csv
     participant Calc as calculator.ts
-    participant DB as Database (SQLite / Prisma)
+    participant DB as Neon PostgreSQL (Prisma)
 
-    Admin->>UI: Unggah berkas CSV / Tempel teks CSV
-    Admin->>UI: Klik tombol "Validasi skema"
+    User->>UI: Drag-and-drop berkas CSV atau pilih template prodi
     UI->>Parser: parseAndValidateCsv(csvText)
     Parser-->>UI: CsvValidationResult (validRows, invalidRows)
-    
+
     alt Terdapat Baris Tidak Valid
-        UI-->>Admin: Tampilkan daftar error per baris (Merah)
+        UI-->>User: Tampilkan daftar error per baris (Merah)
     else Seluruh Baris Valid
-        UI-->>Admin: Pratinjau tugas valid (Hijau) & Tombol Simpan Aktif
-        Admin->>UI: Klik "Simpan dan petakan jadwal"
-        UI->>API: POST { csvContent }
-        API->>DB: Ambil Program Aktif (semesterStartDate, totalWeeks)
-        API->>DB: Truncate / Hapus Assignment lama prodi
+        UI-->>User: Pratinjau tugas valid & aktifkan tombol Simpan
+        User->>UI: Klik "Simpan dan petakan jadwal"
+        UI->>API: POST /api/import/csv { csvContent, programId }
+        API->>DB: Verifikasi sesi & program studi aktif
+        API->>DB: Hapus Assignment lama milik prodi tersebut
         loop Setiap Baris Valid
             API->>Calc: calculateWeekNumber(dueDate, semesterStartDate)
             API->>DB: Course.upsert() & Assignment.create()
         end
         API->>DB: Ambil seluruh Assignment prodi
         API->>Calc: computeAllWeeklyMetrics(assignments, totalWeeks)
-        Calc-->>API: Map<weekNumber, ComputedWeekMetric>
         loop Pekan 1 s/d 16
             API->>DB: WeeklyMetric.upsert(loadIndex, collisionCount, isFlagged)
         end
         API-->>UI: 200 OK { success: true, importedCount: N }
-        UI-->>Admin: Tampilkan Toast Sukses & Arahkan ke Beranda
+        UI-->>User: Progress Bar 100% + Toast Sukses -> Arahkan ke (/)
     end
 ```
 
----
-
-### 3.2 Sequence 2: Solver Deterministik & Eksekusi Pergeseran Tanggal
-Menunjukkan eksekusi algoritma *Minimal Date Move* tanpa AI/LLM.
+### 4.2 Sequence 2: Pengajuan Alasan Mahasiswa & Eksekusi Solver Dosen
 
 ```mermaid
 sequenceDiagram
     autonumber
+    actor Mhs as Mahasiswa
     actor Dosen as Dosen Pengampu
-    participant Page as WeekInspectorPage (/weeks/[w])
+    participant Page as WeekPage / SolverModal
+    participant APIShift as /api/shift-requests
     participant APIWeek as /api/weeks/[weekNumber]
-    participant Calc as calculator.ts (findMinimalDateMoveCandidates)
+    participant Calc as calculator.ts
     participant APIProp as /api/proposals/[id]
-    participant DB as Database (Prisma)
+    participant DB as Neon PostgreSQL (Prisma)
 
-    Dosen->>Page: Membuka Pekan Kritis (Contoh: Pekan 8)
-    Page->>APIWeek: GET /api/weeks/8
-    APIWeek->>DB: Ambil Assignment & WeeklyMetric Pekan 8
-    APIWeek->>DB: Ambil seluruh Assignment semester
-    APIWeek->>Calc: findMinimalDateMoveCandidates(assignments, targetWeek=8)
-    Note over Calc: Evaluasi delta pekan [-1, +1, +2, -2]<br/>Cari move dengan C_target < 3 & C_w < 3
-    Calc-->>APIWeek: Array DateMoveCandidate (diurutkan delta terkecil)
+    Mhs->>Page: Pilih tugas padat & isi alasan pergeseran
+    Page->>APIShift: POST /api/shift-requests { assignmentId, proposedWeek, reason }
+    APIShift->>DB: StudentShiftRequest.create(status: "PENDING")
+    APIShift-->>Page: 201 Created { request }
+
+    Dosen->>Page: Membuka Pekan Kritis (misal Pekan 10)
+    Page->>APIWeek: GET /api/weeks/10
+    Page->>APIShift: GET /api/shift-requests?weekNumber=10
+    APIWeek->>Calc: findMinimalDateMoveCandidates(assignments, 10)
+    Calc-->>APIWeek: Array DateMoveCandidate
     APIWeek-->>Page: 200 OK { metric, assignments, candidates }
-    Page-->>Dosen: Render tabel tugas + Panel Solver Usulan Pergeseran
+    APIShift-->>Page: 200 OK { requests } (beserta avatar & alasan mahasiswa)
 
-    Dosen->>Page: Meninjau kandidat & Klik "Terapkan"
+    Dosen->>Page: Klik "Terapkan" pada tugas miliknya
     Page->>APIProp: PATCH /api/proposals/[id] { action: "ACCEPT", candidate }
-    APIProp->>DB: Assignment.update(dueDate = proposedDueDate, weekNumber = proposedWeek)
-    APIProp->>DB: Ambil seluruh Assignment terupdate
+    APIProp->>DB: Cek kepemilikan (course.lecturerId === user.id || ADMIN)
+    APIProp->>DB: Assignment.update(dueDate, weekNumber)
     APIProp->>Calc: computeAllWeeklyMetrics(allAssignments)
     loop Pekan 1 s/d 16
         APIProp->>DB: WeeklyMetric.upsert(loadIndex, collisionCount, isFlagged)
     end
-    APIProp-->>Page: 200 OK { success: true, message: "Proposal accepted" }
-    Page-->>Dosen: Toast Sukses, Data Pekan Me-refresh, Status Cw Turun
+    APIProp-->>Page: 200 OK { success: true }
 ```
 
----
-
-### 3.3 Sequence 3: Siklus Hidup Permintaan Bantuan Sebaya (Peer Help Lifecycle)
-Menunjukkan siklus penanganan kebuntuan belajar dari pembukaan hingga status *Resolved*.
+### 4.3 Sequence 3: Siklus Hidup Permintaan Bantuan Sebaya
 
 ```mermaid
 sequenceDiagram
@@ -237,126 +242,116 @@ sequenceDiagram
     participant APIHelp as /api/help-requests
     participant APIResp as /api/help-requests/[id]/responses
     participant APIRes as /api/help-requests/[id]/resolve
-    participant DB as Database (Prisma)
+    participant DB as Neon PostgreSQL (Prisma)
 
-    Mhs1->>UI: Buka Modal Bantuan & Isi Sub-topik + Pertanyaan
-    UI->>APIHelp: POST /api/help-requests { assignmentId, requesterId, subtopicLabel, questionDetail }
-    APIHelp->>DB: HelpRequest.create(status: "OPEN", createdAt: now())
+    Mhs1->>UI: Buka Modal Bantuan & isi sub-topik + pertanyaan
+    UI->>APIHelp: POST /api/help-requests { assignmentId, subtopicLabel, questionDetail }
+    Note over APIHelp: requesterId diambil dari cookie sesi (bukan body)
+    APIHelp->>DB: HelpRequest.create(status: "OPEN")
     APIHelp-->>UI: 201 Created { helpRequest }
-    UI-->>Mhs1: Pertanyaan Terbit di Papan Kelas
 
-    Mhs2->>UI: Membuka Papan Bantuan & Memilih Pertanyaan
-    UI-->>Mhs2: Buka HelpResponseDrawer
-    Mhs2->>UI: Pilih Tab (Tulisan / Rekaman / Sesi 20 Mnt) & Ketik Jawaban
-    UI->>APIResp: POST /api/help-requests/[id]/responses { helperId, responseType, contentOrUrl, scheduledSlot }
-    APIResp->>DB: HelpResponse.create(...)
-    APIResp->>DB: Update HelpRequest (status: "IN_PROGRESS", firstResponseAt: now())
+    Mhs2->>UI: Buka HelpResponseDrawer & kirim tanggapan (Tulisan / Rekaman / Sesi 20 Mnt)
+    UI->>APIResp: POST /api/help-requests/[id]/responses { responseType, contentOrUrl, scheduledSlot }
+    APIResp->>DB: HelpResponse.create(...) & Update HelpRequest (IN_PROGRESS, firstResponseAt)
     APIResp-->>UI: 201 Created
-    UI-->>Mhs2: Tanggapan Muncul di Thread
 
-    Mhs1->>UI: Membuka Drawer & Mengonfirmasi Bantuan Berhasil
-    Mhs1->>UI: Klik Tombol "Tandai selesai"
+    Mhs1->>UI: Klik tombol "Tandai selesai"
     UI->>APIRes: PATCH /api/help-requests/[id]/resolve
     APIRes->>DB: Update HelpRequest (status: "RESOLVED", resolvedAt: now())
     APIRes-->>UI: 200 OK
-    UI-->>Mhs1: Lencana Berubah Hijau "Selesai" (RESOLVED)
 ```
 
----
+### 4.4 State Machine Diagrams
 
-## 4. State Machine Diagram
-
-### 4.1 State Machine: Status Usulan Pergeseran Tanggal (Date Move Proposal)
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: Dideteksi oleh Mesin Solver (Cw >= 3)
-    PENDING --> ACCEPTED: Dosen Klik "Terapkan"
-    PENDING --> REJECTED: Dosen Klik "Tolak"
-    ACCEPTED --> [*]: Tanggal Tugas Diubah Permanen & Peta Beban Direkalkulasi
+    [*] --> PENDING: Dideteksi Mesin Solver (Cw >= 3) / Diajukan Mahasiswa
+    PENDING --> ACCEPTED: Dosen Pengampu / Admin Klik "Terapkan"
+    PENDING --> REJECTED: Dosen Pengampu / Admin Klik "Tolak"
+    ACCEPTED --> [*]: Tanggal Tugas Diubah & Peta Beban Direkalkulasi
     REJECTED --> [*]: Jadwal Asli Dipertahankan
 ```
 
-### 4.2 State Machine: Siklus Hidup Permintaan Bantuan (Help Request)
 ```mermaid
 stateDiagram-v2
     [*] --> OPEN: Mahasiswa Membuat Tiket Bantuan Sub-topik
-    OPEN --> OPEN_URGENT: Belum Direspon > 12 Jam (Needs Help Urgent)
+    OPEN --> OPEN_URGENT: Belum Direspon > 12 Jam
     OPEN --> IN_PROGRESS: Teman Sekelas Mengirim Tanggapan Pertama
     OPEN_URGENT --> IN_PROGRESS: Teman Sekelas Mengirim Tanggapan Pertama
-    IN_PROGRESS --> RESOLVED: Penanya / Penolong Klik "Tandai Selesai"
-    RESOLVED --> [*]: Terhitung di KPI Tingkat Penyelesaian Dosen
+    IN_PROGRESS --> RESOLVED: Penanya / Penolong Klik "Tandai selesai"
+    RESOLVED --> [*]: Tercatat di KPI Analitik Dosen
 ```
 
 ---
 
-## 5. Logika Matematis & Algoritma di Balik Alur
+## 5. Logika Matematis & Algoritma Deterministik
 
-### 5.1 Perhitungan Beban dan Tabrakan (PRD 5.2)
+### 5.1 Perhitungan Beban dan Tabrakan
 * **Klasifikasi Tugas:**
   $$\text{is\_major}(a) = \begin{cases} \text{true}, & \text{jika } \text{weight\_score}(a) \ge 3 \\ \text{false}, & \text{jika } \text{weight\_score}(a) < 3 \end{cases}$$
-* **Collision Count ($C_w$):** Menghitung jumlah mata kuliah unik yang memiliki tugas besar di pekan $w$:
+* **Collision Count ($C_w$):** Jumlah mata kuliah unik yang memiliki tugas besar di pekan $w$:
   $$C_w = \left| \{ \text{course\_id} \mid \text{week\_number} = w \land \text{weight\_score} \ge 3 \} \right|$$
 * **Load Index ($L_w$):** Akumulasi total bobot seluruh tugas di pekan $w$:
   $$L_w = \sum_{a \in A_w} \text{weight\_score}(a)$$
 * **Status Zonasi Semantik:**
-  * $C_w \ge 3 \implies$ **Kritis (*Flagged*)** (Merah Kirmizi, badge: `Kritis`)
-  * $C_w = 2 \implies$ **Waspada (*Caution*)** (Kuning Emas, badge: `Waspada`)
-  * $C_w \le 1 \implies$ **Aman (*Safe*)** (Hijau Zamrud, badge: `Aman`)
+  * $C_w \ge 3 \implies$ **Kritis** (`Kritis`)
+  * $C_w = 2 \implies$ **Waspada** (`Waspada`)
+  * $C_w \le 1 \implies$ **Aman** (`Aman`)
 
 ### 5.2 Algoritma Deterministik *Minimal Date Move*
-Algoritma ini dijamin **100% deterministik, konsisten, dan bebas halusinasi (tanpa LLM)**:
-1. **Identifikasi Masalah:** Jika $C_w < 3$, hentikan (pekan sudah seimbang).
-2. **Filter Tugas Kandidat:** Ambil tugas besar ($\text{weight\_score} \ge 3$) di pekan $w$.
-3. **Eksplorasi Tetangga:** Uji pergeseran hari/pekan dengan prioritas jarak terdekat:
-   $$\Delta w \in \{-1, +1, +2, -2, +3, -3\}$$
-4. **Validasi Invariant Keamanan (Safety Invariant):**
-   * Pekan tujuan $w' = w + \Delta w$ **tidak boleh** menjadi kritis akibat pergeseran ($C_{w'} < 3$).
-   * Pergeseran harus menurunkan tabrakan di pekan asal ($C_w^{\text{baru}} < C_w^{\text{lama}}$).
-5. **Pengurutan Deterministik (Sorting Tier):**
-   * Prioritas 1: Mampu menurunkan $C_w < 3$.
-   * Prioritas 2: Jarak perpindahan terkecil ($|\Delta w|$ terkecil).
-   * Prioritas 3: Penurunan bobot terbesar ($\text{loadReductionDelta}$).
+Dijamin **100% deterministik dan bebas halusinasi (tanpa LLM)**:
+1. Hentikan jika $C_w < 3$.
+2. Ambil tugas besar ($\text{weight\_score} \ge 3$) pada pekan $w$.
+3. Uji pergeseran ke pekan tetangga dengan prioritas jarak terdekat: $\Delta w \in \{-1, +1, +2, -2, +3, -3\}$.
+4. **Safety Invariant:** Pekan tujuan $w' = w + \Delta w$ tidak boleh menjadi kritis ($C_{w'} < 3$) dan tabrakan di pekan asal harus berkurang ($C_w^{\text{baru}} < C_w^{\text{lama}}$).
+5. Urutkan kandidat berdasarkan penurunan $C_w < 3$, $|\Delta w|$ terkecil, dan `loadReductionDelta` terbesar.
 
 ---
 
-## 6. Peta Rute Aplikasi & Hubungan Antar Layar
+## 6. Ekosistem Maskot Komunikator, Ilustrasi Editorial & PWA
+
+* **3 Maskot Komunikator Digital (Tanpa Bingkai + Comic Speech Bubble):**
+  * **WIRA (UMK — *Newsman*):** Menyampaikan ringkasan status beban semester, informasi impor jadwal CSV, serta ringkasan analitik dosen.
+  * **Cody (BINUS — *Schedule Assistant*):** Memandu mahasiswa dan dosen saat memeriksa detail pekan kritis serta opsi penyeimbangan tenggat.
+  * **PUTI (Telkom — *Peer-Help Companion*):** Menemani papan bantuan sebaya dan mendorong kolaborasi antar mahasiswa.
+  * Seluruh maskot berinteraksi secara kontekstual pada komponen `MascotBanner`, `MascotDialogueShowcase`, halaman `/login`, `/weeks/[weekNumber]`, `/help`, `/analytics`, `/import`, dan `/about`.
+* **10 Ilustrasi Topik Editorial (`public/images/topics/*.png`):** Kartu pekan, mata kuliah, dan bantuan sebaya menggunakan ilustrasi datar-isometrik bergaya editorial yang dipetakan dengan pencocokan batas kata (*word-boundary regex*) per kode/nama mata kuliah (`coding.png`, `database-sql.png`, `uiux-web.png`, `statistics-math.png`, `network-db.png`, `study-research.png`, `engineering-lab.png`, `industrial-ops.png`, `management-team.png`, `finance-accounting.png`).
+* **Progressive Web App (PWA):** Didukung `public/manifest.json`, `src/components/PWARegister.tsx`, dan `public/sw.js` (`cw-cache-v3` dengan strategi *network-first* untuk HTML serta bundel `_next` agar pembaruan UI selalu segar).
+
+---
+
+## 7. Peta Rute Aplikasi & Penanganan Kasus Khusus
 
 ```mermaid
 flowchart LR
-    Root["/ (Dasbor Utama)"]
+    Login["/login\n(Pilih Akun UMK)"] --> Root["/ (Peta Beban)"]
     Root --- Weeks["/weeks/[weekNumber]\n(Inspeksi Pekan & Solver)"]
-    Root --- Help["/help\n(Papan Bantuan Sebaya)"]
-    Root --- Analytics["/analytics\n(Dasbor Dosen)"]
-    Root --- Import["/import\n(Ingesti Jadwal CSV)"]
-    Root --- About["/about\n(Tentang & Riset STACK)"]
+    Root --- Help["/help\n(Bantuan Sebaya)"]
+    Root --- Analytics["/analytics\n(Analitik Dosen)"]
+    Root --- Import["/import\n(Impor CSV)"]
+    Root --- About["/about\n(Tentang & Maskot)"]
 
-    Weeks -. Geser Tanggal .-> Root
+    Weeks -. Geser / Ajukan Alasan .-> Root
     Weeks -. Minta Bantuan .-> Help
     Help -. Data Kendala .-> Analytics
     Import -. Hasil Kalkulasi .-> Root
 ```
 
-| URL Rute | Komponen Utama | Peran Utama di Alur Sistem |
+| URL Rute | Komponen Utama | Peran & Hak Akses |
 |---|---|---|
-| `/` | `src/app/page.tsx`, `HeatMapGrid.tsx`, `WideWeekCard.tsx` | Menampilkan ringkasan semester, 2 pekan paling kritis, dan grid 16 pekan interaktif. |
-| `/weeks/[weekNumber]` | `src/app/weeks/[weekNumber]/page.tsx`, `DateMoveSolver.tsx` | Carousel 16 pekan, rincian per-tugas, metrik bobot, dan eksekusi solver geser tanggal. |
-| `/help` | `src/app/help/page.tsx`, `HelpResponseDrawer.tsx`, `HelpRequestModal.tsx` | Papan bantuan publik seluruh kelas, filter status kendala (>12 jam), dan formulir 3 kanal jawaban. |
-| `/analytics` | `src/app/analytics/page.tsx` | Pelacakan metrik respon bantuan $< 24$ jam, peringkat sub-topik kendala, dan rekomendasi review untuk dosen. |
-| `/import` | `src/app/import/page.tsx` | Antarmuka unggah CSV, verifikasi skema baris, eksekusi penyimpanan, dan tombol reset data demo 16 pekan. |
-| `/about` | `src/app/about/page.tsx` | Dokumentasi kepatuhan PRD STACK 2026, hasil riset 53 mahasiswa & 3 dosen, profil tim, dan roadmap *Final Day*. |
+| `/login` | `src/app/login/page.tsx`, `UserAvatar.tsx` | Pemilihan akun demo UMK (52 akun dengan avatar, pencarian nama/email, maskot peran). |
+| `/` | `src/app/page.tsx`, `HeatMapGrid.tsx`, `WideWeekCard.tsx` | Peta beban 16 pekan, 2 pekan paling padat, dan ringkasan WIRA sesuai prodi pengguna. |
+| `/weeks/[weekNumber]` | `src/app/weeks/[weekNumber]/page.tsx`, `DateMoveSolver.tsx` | Carousel 16 pekan (responsif di mobile), daftar tugas, form usulan + alasan mahasiswa, serta eksekusi solver khusus dosen pengampu/admin. |
+| `/help` | `src/app/help/page.tsx`, `HelpResponseDrawer.tsx`, `HelpRequestModal.tsx` | Papan bantuan sebaya terisolasi per prodi dengan filter urgensi (>12 jam) dan 3 kanal respons. |
+| `/analytics` | `src/app/analytics/page.tsx` | Khusus Dosen & Admin (`analytics.view`). Menampilkan grafik Recharts, KPI respons < 24 jam, dan rekomendasi review materi. |
+| `/import` | `src/app/import/page.tsx` | Khusus Dosen & Admin (`schedule.import`). Zona *drag-and-drop*, *progress bar* 4 tahap, 6 template CSV prodi, dan validasi Zod. |
+| `/about` | `src/app/about/page.tsx`, `MascotDialogueShowcase` | Profil 3 maskot komunikator digital (WIRA, Cody, PUTI), dialog interaktif, serta ringkasan solusi STACK 2026. |
 
----
-
-## 7. Penanganan Kasus Khusus (Edge Cases Handling)
-
-1. **Format Berkas CSV Rusak / Kurang Kolom:**
-   * Ditangani oleh `parseAndValidateCsv` dengan Zod. Baris yang salah dipisahkan ke dalam `invalidRows` lengkap dengan nomor baris dan keterangan kesalahan spesifik (misal: format tanggal bukan `YYYY-MM-DD` atau bobot di luar rentang 1-5). Tombol simpan dinonaktifkan sampai CSV diperbaiki.
-2. **Seluruh Pekan Tetangga Penuh ($C_{w \pm 1} \ge 2$):**
-   * Algoritma *Minimal Date Move* otomatis memperluas radius pencarian ke $\Delta w = \pm 2$ atau $\pm 3$. Jika seluruh pekan tetap padat, sistem secara transparan menampilkan status bahwa pergeseran otomatis tidak dimungkinkan tanpa penyesuaian kalender prodi.
-3. **Pertanyaan Mahasiswa Mengalami *Cold-Start* (> 12 Jam Tanpa Tanggapan):**
-   * Sistem otomatis menghitung durasi `now() - created_at`. Jika berstatus `OPEN` dan $> 12$ jam, tiket diklasifikasikan sebagai `NEEDS_HELP_URGENT` dan ditempatkan pada filter prioritas atas dengan lencana merah *"Butuh bantuan (>12 jam)"*.
-4. **Transparansi Fitur *Final Day*:**
-   * Fitur yang disisakan untuk babak Final Day (ekstraksi PDF silabus, sinkronisasi otomatis Moodle, dan pencocokan jadwal kalender otomatis) diberi label jelas *"Segera"* / *"Planned for Final Day"* untuk menjaga integritas dan kepatuhan aturan kompetisi.
+### Penanganan Kasus Khusus (*Edge Cases*)
+1. **Format Berkas CSV Rusak / Kurang Kolom:** `parseAndValidateCsv` memisahkan baris bermasalah ke `invalidRows` beserta nomor baris dan detail validasi Zod; penyimpanan diblokir hingga berkas valid.
+2. **Pekan Tetangga Penuh ($C_{w \pm 1} \ge 2$):** Solver otomatis memperluas pencarian hingga $\Delta w = \pm 3$. Jika tetap padat, sistem menampilkan informasi transparan tanpa memaksakan pergeseran.
+3. **Pertanyaan *Cold-Start* (> 12 Jam Tanpa Tanggapan):** Tiket berstatus `OPEN` tanpa respons lebih dari 12 jam otomatis ditandai mendesak dan diprioritaskan di paling atas papan bantuan.
+4. **Akses Lintas Peran atau Lintas Prodi Ilegal:** Seluruh API memeriksa cookie HMAC-SHA256 di server dan mengembalikan `401`/`403` untuk akses tidak sah.
 
 ---
 

@@ -6,6 +6,8 @@ import { WideWeekCard } from "@/components/WideWeekCard";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { useModals } from "@/context/ModalContext";
+import { useRole } from "@/context/RoleContext";
+import { MascotBanner } from "@/components/MascotCommunicator";
 
 interface HeatMapData {
   program: {
@@ -15,6 +17,7 @@ interface HeatMapData {
     semesterStartDate: string;
     totalWeeks: number;
   };
+  programs?: { id: string; code: string; name: string }[];
   metrics: any[];
   summary: {
     totalWeeks: number;
@@ -26,16 +29,24 @@ interface HeatMapData {
 
 export default function HomePage() {
   const [data, setData] = useState<HeatMapData | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const { openSolverModal } = useModals();
+  const { role, currentUser } = useRole();
 
-  const fetchHeatmap = async () => {
+  const fetchHeatmap = async (programId?: string) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/metrics/heatmap");
+      const url = programId
+        ? `/api/metrics/heatmap?programId=${encodeURIComponent(programId)}`
+        : "/api/metrics/heatmap";
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setData(json);
+        if (!programId && json?.program?.id) {
+          setSelectedProgramId(json.program.id);
+        }
       }
     } catch (err) {
       console.error("Gagal memuat data peta beban:", err);
@@ -45,8 +56,12 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    fetchHeatmap();
-  }, []);
+    setSelectedProgramId("");
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    fetchHeatmap(role === "ADMIN" ? selectedProgramId || undefined : undefined);
+  }, [selectedProgramId, currentUser?.id, role]);
 
   const flaggedMetrics = (data?.metrics || [])
     .filter((m) => m.isFlagged || m.collisionCount >= 3)
@@ -64,11 +79,13 @@ export default function HomePage() {
     return `Jadwal Akademik Pekan ${weekNum}`;
   };
 
-  const getRecommendation = (weekNum: number) => {
-    if (weekNum === 10) return "Optimal: geser Proyek Jaringan Komputer ke Pekan 11 agar Cw turun ke 3";
-    if (weekNum === 14) return "Optimal: geser Proyek Basis Data ke Pekan 15 agar Cw turun ke 3";
-    if (weekNum === 6) return "Optimal: geser Tugas Statistik ke Pekan 7 agar Cw turun ke 2";
-    return "Jalankan solver deterministik untuk menyeimbangkan beban pekan";
+  const getRecommendation = (metric: any) => {
+    if (!metric) return "Jalankan solver deterministik untuk menyeimbangkan beban pekan";
+    const firstCourse = metric.courses?.[0];
+    if (metric.collisionCount >= 3 && firstCourse) {
+      return `Optimal: geser tugas ${firstCourse} ke Pekan ${Math.min(16, metric.weekNumber + 1)} agar bentrok berkurang`;
+    }
+    return "Lihat rincian tugas dan rekomendasi pergeseran pekan";
   };
 
   return (
@@ -84,10 +101,98 @@ export default function HomePage() {
           </span>
         </div>
 
-        <p className="text-xs text-cw-muted">
-          Program: <span className="font-semibold text-cw-ink">{data?.program.name || "Teknik Informatika"}</span>
-        </p>
+        <div className="flex items-center gap-2 text-xs text-cw-muted">
+          <span>Jurusan:</span>
+          {role === "ADMIN" && data?.programs && data.programs.length > 1 ? (
+            <select
+              aria-label="Pilih jurusan"
+              value={selectedProgramId || data.program.id}
+              onChange={(e) => setSelectedProgramId(e.target.value)}
+              className="rounded-lg border border-cw-line bg-cw-surface px-2.5 py-1 text-xs font-semibold text-cw-ink focus:outline-none focus:ring-2 focus:ring-cw-accent/40"
+            >
+              {data.programs.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="font-semibold text-cw-ink">
+              {data?.program.name || currentUser?.program?.name || "Memuat..."}
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Maskot Newsman / Announcer: WIRA (UMK) */}
+      {!loading && data && (
+        <MascotBanner
+          persona="umk"
+          callout={(data.summary.flaggedWeeksCount || 0) > 0 ? "SIAGA PEKAN!" : "TERBANG TINGGI!"}
+          pose={(data.summary.flaggedWeeksCount || 0) > 0 ? "stress.webp" : "success.webp"}
+          tone={(data.summary.flaggedWeeksCount || 0) > 0 ? "warning" : "success"}
+          headline={
+            (data.summary.flaggedWeeksCount || 0) > 0
+              ? `Buletin ${data.program.name}: ${data.summary.flaggedWeeksCount} pekan kritis terdeteksi`
+              : `Buletin ${data.program.name}: seluruh pekan dalam kondisi seimbang`
+          }
+          message={
+            (data.summary.flaggedWeeksCount || 0) > 0
+              ? `Beban tertinggi mencapai ${data.summary.peakLoadIndex} poin di Pekan ${card1?.weekNumber || 10}. Klik untuk meninjau rincian tugas atau menyeimbangkan jadwal.`
+              : "Tidak ada penumpukan 3 tugas besar bersamaan di pekan yang sama."
+          }
+          actionLabel={(data.summary.flaggedWeeksCount || 0) > 0 ? "Tinjau Pekan Kritis" : undefined}
+          actionHref={
+            (data.summary.flaggedWeeksCount || 0) > 0
+              ? `/weeks/${card1?.weekNumber || 10}${role === "ADMIN" && selectedProgramId ? `?programId=${selectedProgramId}` : ""}`
+              : undefined
+          }
+        />
+      )}
+
+      {/* Ringkasan Eksekusi Semester (gaya KPI Trenning) */}
+      {!loading && data && (
+        <div className="cw-card grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-cw-line">
+          <div className="p-4 sm:px-5 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-medium text-cw-faint block">Total Pekan Dipantau</span>
+              <span className="text-xl font-semibold text-cw-ink tabular-nums mt-0.5 block">
+                {data.summary.totalWeeks} pekan
+              </span>
+            </div>
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-cw-subtle border border-cw-line text-cw-muted">
+              1 Semester
+            </span>
+          </div>
+
+          <div className="p-4 sm:px-5 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-medium text-cw-faint block">Pekan Kritis (Cw ≥ 3)</span>
+              <span
+                className={`text-xl font-semibold tabular-nums mt-0.5 block ${
+                  data.summary.flaggedWeeksCount > 0 ? "text-semantic-danger-fg" : "text-semantic-success-fg"
+                }`}
+              >
+                {data.summary.flaggedWeeksCount} pekan
+              </span>
+            </div>
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                data.summary.flaggedWeeksCount > 0 ? "bg-semantic-danger-ring" : "bg-semantic-success-ring"
+              }`}
+            />
+          </div>
+
+          <div className="p-4 sm:px-5 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-medium text-cw-faint block">Beban Puncak &amp; Rata-rata</span>
+              <span className="text-xl font-semibold text-cw-ink tabular-nums mt-0.5 block">
+                {data.summary.peakLoadIndex} <span className="text-xs font-normal text-cw-muted">poin puncak · rata-rata {data.summary.avgLoadIndex}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Seksi Pekan Paling Padat */}
       <section className="space-y-3.5">
@@ -102,7 +207,7 @@ export default function HomePage() {
           </div>
 
           <Button variant="ghost" size="sm" onClick={openSolverModal} type="button">
-            <span>Buka solver</span>
+            <span>{role === "STUDENT" ? "Ajukan geser tanggal" : "Buka solver"}</span>
             <span>→</span>
           </Button>
         </div>
@@ -121,9 +226,10 @@ export default function HomePage() {
                 collisionCount={card1.collisionCount}
                 loadIndex={card1.loadIndex}
                 courses={card1.courses || []}
-                recommendation={getRecommendation(card1.weekNumber)}
+                recommendation={getRecommendation(card1)}
                 palette="koral"
                 illustrationType="laptop"
+                programQuery={role === "ADMIN" && selectedProgramId ? `?programId=${selectedProgramId}` : ""}
               />
             )}
 
@@ -134,9 +240,10 @@ export default function HomePage() {
                 collisionCount={card2.collisionCount}
                 loadIndex={card2.loadIndex}
                 courses={card2.courses || []}
-                recommendation={getRecommendation(card2.weekNumber)}
+                recommendation={getRecommendation(card2)}
                 palette="pasir"
                 illustrationType="notebook"
+                programQuery={role === "ADMIN" && selectedProgramId ? `?programId=${selectedProgramId}` : ""}
               />
             )}
           </div>
@@ -157,7 +264,7 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
               <CardSkeleton key={i} />
             ))}
@@ -166,6 +273,7 @@ export default function HomePage() {
           <HeatMapGrid
             metrics={data?.metrics || []}
             onOpenSolverModal={openSolverModal}
+            programQuery={role === "ADMIN" && selectedProgramId ? `?programId=${selectedProgramId}` : ""}
           />
         )}
       </section>

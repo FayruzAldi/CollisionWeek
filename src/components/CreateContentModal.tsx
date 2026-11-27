@@ -13,6 +13,7 @@ import {
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
+import { useRole } from "@/context/RoleContext";
 
 interface CreateContentModalProps {
   isOpen: boolean;
@@ -28,6 +29,8 @@ export function CreateContentModal({
   onOpenSolverModal,
 }: CreateContentModalProps) {
   const router = useRouter();
+  const { role, can } = useRole();
+  const isStudent = role === "STUDENT";
 
   const contentOptions = [
     {
@@ -36,6 +39,7 @@ export function CreateContentModal({
       description: "Ajukan pertanyaan spesifik pada satu sub-topik tugas.",
       icon: Users,
       badge: null,
+      show: true,
       action: () => {
         onClose();
         onOpenHelpModal();
@@ -43,10 +47,13 @@ export function CreateContentModal({
     },
     {
       id: "date-solver",
-      title: "Geser tanggal",
-      description: "Jalankan solver untuk menyeimbangkan pekan padat.",
+      title: isStudent ? "Ajukan geser tanggal ke dosen" : "Geser tanggal (Solver)",
+      description: isStudent
+        ? "Pilih tugas padat dan kirim usulan pergeseran beserta alasan ke dosen."
+        : "Jalankan solver untuk menyeimbangkan pekan padat.",
       icon: Calendar,
-      badge: "Deterministik",
+      badge: isStudent ? "Usulan" : "Deterministik",
+      show: true,
       action: () => {
         onClose();
         onOpenSolverModal();
@@ -58,20 +65,10 @@ export function CreateContentModal({
       description: "Unggah tenggat tugas untuk memetakan 16 pekan.",
       icon: Layers,
       badge: null,
+      show: can("schedule.import"),
       action: () => {
         onClose();
         router.push("/import");
-      },
-    },
-    {
-      id: "session-20min",
-      title: "Sesi 20 menit",
-      description: "Buka atau ikuti sesi diskusi 20 menit.",
-      icon: Clock,
-      badge: null,
-      action: () => {
-        onClose();
-        router.push("/help?filter=needs_help");
       },
     },
     {
@@ -80,6 +77,7 @@ export function CreateContentModal({
       description: "Lihat sub-topik dengan kendala terbanyak.",
       icon: BarChart3,
       badge: null,
+      show: can("analytics.view"),
       action: () => {
         onClose();
         router.push("/analytics");
@@ -91,12 +89,13 @@ export function CreateContentModal({
       description: "Kembalikan data demo 16 pekan.",
       icon: RotateCcw,
       badge: null,
+      show: can("demo.reset"),
       action: () => {
         onClose();
         router.push("/import");
       },
     },
-  ];
+  ].filter((opt) => opt.show);
 
   return (
     <Modal

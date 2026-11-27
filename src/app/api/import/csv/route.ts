@@ -6,15 +6,26 @@ import {
   computeAllWeeklyMetrics,
   AssignmentMetricInput,
 } from "@/lib/calculator";
+import { requireCapability } from "@/lib/session";
+import { toErrorResponse } from "@/lib/api-error";
 
+/**
+ * Impor CSV tenggat tugas.
+ *
+ * Otorisasi: `schedule.import` (dosen/admin). Route ini menulis ulang jadwal
+ * seluruh program, jadi tidak boleh bisa dipanggil dari browser mahasiswa.
+ */
 export async function POST(req: NextRequest) {
   try {
+    const { user } = await requireCapability("schedule.import");
     const contentType = req.headers.get("content-type") || "";
     let csvContent = "";
+    let requestedProgramCode = "";
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
+      requestedProgramCode = ((formData.get("programCode") as string) || "").trim();
       if (!file) {
         return NextResponse.json(
           { error: "No CSV file provided in form data" },
@@ -25,6 +36,7 @@ export async function POST(req: NextRequest) {
     } else {
       const json = await req.json();
       csvContent = json.csvContent || "";
+      requestedProgramCode = (json.programCode || "").trim();
     }
 
     if (!csvContent.trim()) {
@@ -49,20 +61,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const program = await prisma.program.findFirst({
-      include: { courses: true, users: true },
-    });
+    // Tentukan program studi target:
+    // - Dosen selalu mengimpor ke prodinya sendiri.
+    // - Admin bisa memilih programCode atau otomatis dideteksi dari awalan course_code (IF/SI/TE/TI/MN/AK).
+    const prefixMap: Record<string, string> = {
+      IF: "IF-2027",
+      GE: "IF-2027",
+      SI: "SI-2027",
+      TE: "TE-2027",
+      TI: "TI-2027",
+      MN: "MN-2027",
+      AK: "AK-2027",
+    };
+    const firstPrefix = (validation.validRows[0]?.course_code || "")
+      .trim()
+      .slice(0, 2)
+      .toUpperCase();
+    const detectedCode = requestedProgramCode || prefixMap[firstPrefix] || "";
+
+    const program =
+      user.role === "ADMIN" && detectedCode
+        ? (await prisma.program.findUnique({
+            where: { code: detectedCode },
+            include: { courses: true, users: true },
+          })) ||
+          (await prisma.program.findUnique({
+            where: { id: user.programId },
+            include: { courses: true, users: true },
+          }))
+        : await prisma.program.findUnique({
+            where: { id: user.programId },
+            include: { courses: true, users: true },
+          });
 
     if (!program) {
       return NextResponse.json(
-        { error: "Program configuration not found. Please initialize semester first." },
+        { error: "Program studi tidak ditemukan. Pastikan semester sudah diinisialisasi." },
         { status: 404 }
       );
     }
 
     // Default lecturer if new course needs to be created
     const defaultLecturer =
-      program.users.find((u) => u.role === "LECTURER") || program.users[0];
+      user.role === "LECTURER"
+        ? user
+        : program.users.find((u) => u.role === "LECTURER") || program.users[0] || user;
 
     const courseMap = new Map<string, string>();
     for (const c of program.courses) {
@@ -164,14 +207,17 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully imported ${createdAssignments.length} assignments from CSV. Weekly metrics recalculated.`,
+      message: `Berhasil mengimpor ${createdAssignments.length} tugas ke jurusan ${program.name}. Peta beban telah dihitung ulang.`,
+      programName: program.name,
       importedCount: createdAssignments.length,
       flaggedWeeksCount: flaggedCount,
     });
   } catch (error) {
-    console.error("Error importing CSV:", error);
+    const authError = toErrorResponse(error);
+    if (authError) return authError;
+    console.error("Gagal mengimpor CSV:", error);
     return NextResponse.json(
-      { error: "Internal server error while importing CSV" },
+      { error: "Gagal mengimpor CSV." },
       { status: 500 }
     );
   }
